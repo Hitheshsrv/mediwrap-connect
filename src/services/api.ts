@@ -20,8 +20,28 @@ export interface Doctor {
   online: boolean;
 }
 
-// Mock data for doctors - in a real app, this would come from an API
-const mockDoctors = [
+export interface Appointment {
+  id: number;
+  doctorId: number;
+  patientId: number;
+  date: string;
+  time: string;
+  type: "video" | "in-person";
+  status: "confirmed" | "pending" | "canceled";
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  image: string;
+  stock: number;
+}
+
+// Initial data to populate localStorage if empty
+const initialDoctors: Doctor[] = [
   {
     id: 1,
     name: "Dr. Sarah Johnson",
@@ -88,18 +108,7 @@ const mockDoctors = [
   },
 ];
 
-export interface Appointment {
-  id: number;
-  doctorId: number;
-  patientId: number;
-  date: string;
-  time: string;
-  type: "video" | "in-person";
-  status: "confirmed" | "pending" | "canceled";
-}
-
-// Mock data for appointments
-let mockAppointments: Appointment[] = [
+const initialAppointments: Appointment[] = [
   {
     id: 1001,
     doctorId: 1,
@@ -129,18 +138,7 @@ let mockAppointments: Appointment[] = [
   }
 ];
 
-// Mock data for products
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-  description: string;
-  image: string;
-  stock: number;
-}
-
-const mockProducts: Product[] = [
+const initialProducts: Product[] = [
   {
     id: 1,
     name: "Paracetamol 500mg",
@@ -179,90 +177,146 @@ const mockProducts: Product[] = [
   }
 ];
 
+// Helper functions for localStorage
+const getFromStorage = <T>(key: string, initialData: T[]): T[] => {
+  try {
+    const storedData = localStorage.getItem(key);
+    if (storedData) {
+      return JSON.parse(storedData);
+    }
+    // Initialize with initial data if nothing exists
+    localStorage.setItem(key, JSON.stringify(initialData));
+    return initialData;
+  } catch (error) {
+    console.error(`Error accessing localStorage for ${key}:`, error);
+    return initialData;
+  }
+};
+
+const saveToStorage = <T>(key: string, data: T[]): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving to localStorage for ${key}:`, error);
+  }
+};
+
+// Storage keys
+const STORAGE_KEYS = {
+  DOCTORS: 'mediwrap_doctors',
+  APPOINTMENTS: 'mediwrap_appointments',
+  PRODUCTS: 'mediwrap_products',
+};
+
 // API client class to handle all backend requests
 export class ApiClient {
-  // Base URL for API requests - would come from environment variables in a real app
+  // Base URL for API requests - would be used for real API
   private baseUrl: string = "/api";
 
   // Get all doctors
   async getDoctors(): Promise<Doctor[]> {
-    // In a real app, this would make an actual API call
-    // return await fetch(`${this.baseUrl}/doctors`).then(res => res.json());
-    
-    // For now, return mock data
     return new Promise((resolve) => {
-      setTimeout(() => resolve(mockDoctors), 500); // Simulate network delay
+      setTimeout(() => {
+        const doctors = getFromStorage<Doctor>(STORAGE_KEYS.DOCTORS, initialDoctors);
+        resolve(doctors);
+      }, 300);
     });
   }
 
   // Get a single doctor by ID
   async getDoctor(id: number): Promise<Doctor | undefined> {
-    // In a real app, this would make an actual API call
-    // return await fetch(`${this.baseUrl}/doctors/${id}`).then(res => res.json());
-    
-    // For now, return mock data
     return new Promise((resolve) => {
       setTimeout(() => {
-        const doctor = mockDoctors.find(doc => doc.id === id);
+        const doctors = getFromStorage<Doctor>(STORAGE_KEYS.DOCTORS, initialDoctors);
+        const doctor = doctors.find(doc => doc.id === id);
         resolve(doctor);
+      }, 200);
+    });
+  }
+
+  // Add a new doctor
+  async addDoctor(doctorData: Omit<Doctor, "id">): Promise<Doctor> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const doctors = getFromStorage<Doctor>(STORAGE_KEYS.DOCTORS, initialDoctors);
+        const newDoctor: Doctor = {
+          ...doctorData,
+          id: Math.max(0, ...doctors.map(d => d.id)) + 1
+        };
+        
+        doctors.push(newDoctor);
+        saveToStorage(STORAGE_KEYS.DOCTORS, doctors);
+        resolve(newDoctor);
+      }, 300);
+    });
+  }
+
+  // Update a doctor
+  async updateDoctor(id: number, updates: Partial<Doctor>): Promise<Doctor | undefined> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const doctors = getFromStorage<Doctor>(STORAGE_KEYS.DOCTORS, initialDoctors);
+        const index = doctors.findIndex(doc => doc.id === id);
+        
+        if (index !== -1) {
+          doctors[index] = { ...doctors[index], ...updates };
+          saveToStorage(STORAGE_KEYS.DOCTORS, doctors);
+          resolve(doctors[index]);
+        } else {
+          resolve(undefined);
+        }
       }, 300);
     });
   }
 
   // Book an appointment
   async bookAppointment(doctorId: number, appointmentData: Partial<Appointment>): Promise<Appointment> {
-    // In a real app, this would make an API call with POST
-    /* 
-    return await fetch(`${this.baseUrl}/appointments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ doctorId, ...appointmentData }),
-    }).then(res => res.json());
-    */
-
-    // For now, return mock response
     return new Promise((resolve) => {
       setTimeout(() => {
+        const appointments = getFromStorage<Appointment>(STORAGE_KEYS.APPOINTMENTS, initialAppointments);
+        
         const newAppointment: Appointment = {
-          id: Math.floor(Math.random() * 10000),
+          id: Math.max(0, ...appointments.map(a => a.id)) + 1,
           doctorId,
-          patientId: 1, // Would come from auth in a real app
+          patientId: appointmentData.patientId || 1, // Would come from auth in a real app
           date: appointmentData.date || new Date().toISOString().split('T')[0],
           time: appointmentData.time || "10:00 AM",
           type: appointmentData.type || "video",
-          status: "pending" // Explicitly set to a valid literal value from the type
+          status: "pending"
         };
         
-        // Add to mock appointments
-        mockAppointments.push(newAppointment);
-        
+        appointments.push(newAppointment);
+        saveToStorage(STORAGE_KEYS.APPOINTMENTS, appointments);
         resolve(newAppointment);
-      }, 500);
-    });
-  }
-
-  // Update appointment status (for doctor/admin)
-  async updateAppointmentStatus(id: number, status: "confirmed" | "pending" | "canceled"): Promise<Appointment> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockAppointments.findIndex(app => app.id === id);
-        
-        if (index !== -1) {
-          mockAppointments[index].status = status;
-          resolve(mockAppointments[index]);
-        } else {
-          reject(new Error("Appointment not found"));
-        }
       }, 300);
     });
   }
 
-  // Get all appointments (for admin)
+  // Update appointment status
+  async updateAppointmentStatus(id: number, status: "confirmed" | "pending" | "canceled"): Promise<Appointment> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const appointments = getFromStorage<Appointment>(STORAGE_KEYS.APPOINTMENTS, initialAppointments);
+        const index = appointments.findIndex(app => app.id === id);
+        
+        if (index !== -1) {
+          appointments[index].status = status;
+          saveToStorage(STORAGE_KEYS.APPOINTMENTS, appointments);
+          resolve(appointments[index]);
+        } else {
+          reject(new Error("Appointment not found"));
+        }
+      }, 200);
+    });
+  }
+
+  // Get all appointments
   async getAllAppointments(): Promise<Appointment[]> {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...mockAppointments]), 500);
+      setTimeout(() => {
+        const appointments = getFromStorage<Appointment>(STORAGE_KEYS.APPOINTMENTS, initialAppointments);
+        resolve(appointments);
+      }, 300);
     });
   }
 
@@ -270,27 +324,25 @@ export class ApiClient {
   async getDoctorAppointments(doctorId: number): Promise<Appointment[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const appointments = mockAppointments.filter(app => app.doctorId === doctorId);
-        resolve(appointments);
-      }, 500);
+        const appointments = getFromStorage<Appointment>(STORAGE_KEYS.APPOINTMENTS, initialAppointments);
+        const filtered = appointments.filter(app => app.doctorId === doctorId);
+        resolve(filtered);
+      }, 300);
     });
   }
 
   // Search doctors by name, specialty or hospital
   async searchDoctors(searchTerm: string): Promise<Doctor[]> {
-    // In a real app, this would make an API call
-    // return await fetch(`${this.baseUrl}/doctors/search?term=${encodeURIComponent(searchTerm)}`).then(res => res.json());
-    
-    // For now, filter mock data
     return new Promise((resolve) => {
       setTimeout(() => {
-        const results = mockDoctors.filter(doctor => 
+        const doctors = getFromStorage<Doctor>(STORAGE_KEYS.DOCTORS, initialDoctors);
+        const results = doctors.filter(doctor => 
           doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
           doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
         );
         resolve(results);
-      }, 300);
+      }, 200);
     });
   }
 
@@ -298,16 +350,20 @@ export class ApiClient {
   async getPatientAppointments(patientId: number): Promise<Appointment[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const appointments = mockAppointments.filter(app => app.patientId === patientId);
-        resolve(appointments);
-      }, 500);
+        const appointments = getFromStorage<Appointment>(STORAGE_KEYS.APPOINTMENTS, initialAppointments);
+        const filtered = appointments.filter(app => app.patientId === patientId);
+        resolve(filtered);
+      }, 300);
     });
   }
 
-  // Get all products (for pharmacy)
+  // Get all products
   async getProducts(): Promise<Product[]> {
     return new Promise((resolve) => {
-      setTimeout(() => resolve(mockProducts), 500);
+      setTimeout(() => {
+        const products = getFromStorage<Product>(STORAGE_KEYS.PRODUCTS, initialProducts);
+        resolve(products);
+      }, 300);
     });
   }
 
@@ -315,10 +371,54 @@ export class ApiClient {
   async getProduct(id: number): Promise<Product | undefined> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const product = mockProducts.find(prod => prod.id === id);
+        const products = getFromStorage<Product>(STORAGE_KEYS.PRODUCTS, initialProducts);
+        const product = products.find(prod => prod.id === id);
         resolve(product);
+      }, 200);
+    });
+  }
+
+  // Add a new product
+  async addProduct(productData: Omit<Product, "id">): Promise<Product> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const products = getFromStorage<Product>(STORAGE_KEYS.PRODUCTS, initialProducts);
+        const newProduct: Product = {
+          ...productData,
+          id: Math.max(0, ...products.map(p => p.id)) + 1
+        };
+        
+        products.push(newProduct);
+        saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+        resolve(newProduct);
       }, 300);
     });
+  }
+
+  // Update product stock
+  async updateProductStock(id: number, newStock: number): Promise<Product | undefined> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const products = getFromStorage<Product>(STORAGE_KEYS.PRODUCTS, initialProducts);
+        const index = products.findIndex(prod => prod.id === id);
+        
+        if (index !== -1) {
+          products[index].stock = newStock;
+          saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+          resolve(products[index]);
+        } else {
+          resolve(undefined);
+        }
+      }, 200);
+    });
+  }
+
+  // Clear all localStorage data (for testing/resetting)
+  clearAllData(): void {
+    localStorage.removeItem(STORAGE_KEYS.DOCTORS);
+    localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
+    localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+    console.log('All data has been reset to initial values.');
   }
 }
 
