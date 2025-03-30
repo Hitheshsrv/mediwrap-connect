@@ -98,6 +98,87 @@ export interface Appointment {
   status: "confirmed" | "pending" | "canceled";
 }
 
+// Mock data for appointments
+let mockAppointments: Appointment[] = [
+  {
+    id: 1001,
+    doctorId: 1,
+    patientId: 1,
+    date: "2023-06-10",
+    time: "3:00 PM",
+    type: "video",
+    status: "confirmed"
+  },
+  {
+    id: 1002,
+    doctorId: 3,
+    patientId: 1,
+    date: "2023-06-15",
+    time: "10:30 AM",
+    type: "in-person",
+    status: "pending"
+  },
+  {
+    id: 1003,
+    doctorId: 2,
+    patientId: 2,
+    date: "2023-06-12",
+    time: "2:00 PM",
+    type: "video",
+    status: "pending"
+  }
+];
+
+// Mock data for products
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  image: string;
+  stock: number;
+}
+
+const mockProducts: Product[] = [
+  {
+    id: 1,
+    name: "Paracetamol 500mg",
+    price: 5.99,
+    category: "Pain Relief",
+    description: "Effective pain relief for headaches, toothaches, and fever reduction.",
+    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+    stock: 100
+  },
+  {
+    id: 2,
+    name: "Vitamin C 1000mg",
+    price: 12.49,
+    category: "Vitamins",
+    description: "High-strength vitamin C supplement to support immune system health.",
+    image: "https://images.unsplash.com/photo-1616671276441-2f2c2a9b1b30?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+    stock: 50
+  },
+  {
+    id: 3,
+    name: "Digital Blood Pressure Monitor",
+    price: 45.99,
+    category: "Medical Devices",
+    description: "Accurate and easy to use blood pressure monitoring device for home use.",
+    image: "https://images.unsplash.com/photo-1615461066841-6116e61058f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+    stock: 20
+  },
+  {
+    id: 4,
+    name: "Omega-3 Fish Oil",
+    price: 18.99,
+    category: "Supplements",
+    description: "High-quality omega-3 supplement for heart and brain health.",
+    image: "https://images.unsplash.com/photo-1577086664693-а8d2c8f5a449?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+    stock: 75
+  }
+];
+
 // API client class to handle all backend requests
 export class ApiClient {
   // Base URL for API requests - would come from environment variables in a real app
@@ -144,7 +225,7 @@ export class ApiClient {
     // For now, return mock response
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({
+        const newAppointment = {
           id: Math.floor(Math.random() * 10000),
           doctorId,
           patientId: 1, // Would come from auth in a real app
@@ -152,7 +233,45 @@ export class ApiClient {
           time: appointmentData.time || "10:00 AM",
           type: appointmentData.type || "video",
           status: "pending"
-        });
+        };
+        
+        // Add to mock appointments
+        mockAppointments.push(newAppointment);
+        
+        resolve(newAppointment);
+      }, 500);
+    });
+  }
+
+  // Update appointment status (for doctor/admin)
+  async updateAppointmentStatus(id: number, status: "confirmed" | "pending" | "canceled"): Promise<Appointment> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockAppointments.findIndex(app => app.id === id);
+        
+        if (index !== -1) {
+          mockAppointments[index].status = status;
+          resolve(mockAppointments[index]);
+        } else {
+          reject(new Error("Appointment not found"));
+        }
+      }, 300);
+    });
+  }
+
+  // Get all appointments (for admin)
+  async getAllAppointments(): Promise<Appointment[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([...mockAppointments]), 500);
+    });
+  }
+
+  // Get appointments for a doctor
+  async getDoctorAppointments(doctorId: number): Promise<Appointment[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const appointments = mockAppointments.filter(app => app.doctorId === doctorId);
+        resolve(appointments);
       }, 500);
     });
   }
@@ -177,33 +296,28 @@ export class ApiClient {
 
   // Get appointments for a patient
   async getPatientAppointments(patientId: number): Promise<Appointment[]> {
-    // In a real app, this would make an API call
-    // return await fetch(`${this.baseUrl}/patients/${patientId}/appointments`).then(res => res.json());
-    
-    // For now, return mock data
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve([
-          {
-            id: 1001,
-            doctorId: 1,
-            patientId,
-            date: "2023-06-10",
-            time: "3:00 PM",
-            type: "video",
-            status: "confirmed"
-          },
-          {
-            id: 1002,
-            doctorId: 3,
-            patientId,
-            date: "2023-06-15",
-            time: "10:30 AM",
-            type: "in-person",
-            status: "pending"
-          }
-        ]);
+        const appointments = mockAppointments.filter(app => app.patientId === patientId);
+        resolve(appointments);
       }, 500);
+    });
+  }
+
+  // Get all products (for pharmacy)
+  async getProducts(): Promise<Product[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(mockProducts), 500);
+    });
+  }
+
+  // Get a single product by ID
+  async getProduct(id: number): Promise<Product | undefined> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const product = mockProducts.find(prod => prod.id === id);
+        resolve(product);
+      }, 300);
     });
   }
 }

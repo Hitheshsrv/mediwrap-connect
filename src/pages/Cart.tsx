@@ -5,58 +5,21 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Trash2, PlusCircle, MinusCircle, CreditCard, Truck } from "lucide-react";
-
-// Sample cart data - in a real app, this would be managed with context or state management
-const initialCartItems = [
-  {
-    id: 1,
-    name: "Paracetamol 500mg",
-    price: 5.99,
-    quantity: 2,
-    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80"
-  },
-  {
-    id: 2,
-    name: "Vitamin C 1000mg",
-    price: 12.49,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1616671276441-2f2c2a9b1b30?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80"
-  }
-];
+import { useCart } from "@/hooks/useCart";
 
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const { cartItems, updateQuantity, removeFromCart, clearCart, subtotal } = useCart();
   const [couponCode, setCouponCode] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
 
-  // Calculate subtotal, discount, shipping, and total
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Calculate discount and shipping
   const discount = isCouponApplied ? subtotal * 0.1 : 0; // 10% discount if coupon applied
   const shipping = subtotal > 50 ? 0 : 5.99; // Free shipping over $50
   const total = subtotal - discount + shipping;
-
-  // Handle quantity change
-  const updateQuantity = (id: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    
-    setCartItems(cartItems.map(item => 
-      item.id === id ? { ...item, quantity: newQuantity } : item
-    ));
-  };
-
-  // Handle removing item from cart
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
-    
-    toast({
-      title: "Item removed",
-      description: "Item has been removed from your cart.",
-    });
-  };
 
   // Handle applying coupon code
   const applyCoupon = () => {
@@ -83,7 +46,7 @@ const Cart = () => {
     });
     
     // Clear cart
-    setCartItems([]);
+    clearCart();
     
     // In a real app, we would redirect to an order confirmation page
     setTimeout(() => {
@@ -146,7 +109,7 @@ const Cart = () => {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeFromCart(item.id)}
                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
