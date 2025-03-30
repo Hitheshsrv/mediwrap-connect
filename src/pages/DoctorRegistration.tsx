@@ -1,57 +1,65 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CheckCircle } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Form schema validation using Zod
+// Define the form schema with Zod
 const formSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().min(10, { message: "Phone number must be at least 10 characters." }),
-  specialty: z.string().min(1, { message: "Please select a specialty." }),
-  experience: z.string().min(1, { message: "Please enter your years of experience." }),
-  qualification: z.string().min(1, { message: "Please enter your qualification." }),
-  licenseNumber: z.string().min(5, { message: "License number must be at least 5 characters." }),
-  consultationType: z.enum(["online", "offline", "both"], { message: "Please select a consultation type." }),
-  address: z.string().min(1, { message: "Please enter your address." }),
-  city: z.string().min(1, { message: "Please enter your city." }),
-  state: z.string().min(1, { message: "Please enter your state." }),
-  country: z.string().min(1, { message: "Please enter your country." }),
-  pincode: z.string().min(5, { message: "Please enter a valid pincode." }),
-  bio: z.string().min(10, { message: "Bio must be at least 10 characters." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  confirmPassword: z.string().min(8, { message: "Confirm password must be at least 8 characters." }),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  specialty: z.string().min(1, "Specialty is required"),
+  experience: z.string().min(1, "Years of experience is required"),
+  qualification: z.string().min(1, "Qualification is required"),
+  licenseNumber: z.string().min(3, "License number is required"),
+  consultationType: z.enum(["online", "in-person", "both"]),
+  address: z.string().min(5, "Address is required"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  country: z.string().min(2, "Country is required"),
+  pincode: z.string().min(5, "Pincode/ZIP code is required"),
+  bio: z.string().min(10, "Please provide a brief bio"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password must be at least 8 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
-const specialties = [
-  "Cardiology", "Dermatology", "Endocrinology", "Gastroenterology", 
-  "Neurology", "Obstetrics", "Ophthalmology", "Orthopedics", 
-  "Pediatrics", "Psychiatry", "Pulmonology", "Radiology", "Urology"
-];
+type FormValues = z.infer<typeof formSchema>;
 
 const DoctorRegistration = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form with react-hook-form
-  const form = useForm<z.infer<typeof formSchema>>({
+  // Initialize form
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       firstName: "",
@@ -74,146 +82,324 @@ const DoctorRegistration = () => {
     },
   });
 
-  // Form submission handler
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Simulate API call
-    console.log("Form submitted:", values);
+  // Submit handler
+  const onSubmit = async (values: FormValues) => {
+    setIsSubmitting(true);
     
-    // Mock successful submission after a delay
-    setTimeout(() => {
+    try {
+      // Log form data - in a real app, this would be sent to the backend
+      console.log("Form submitted:", values);
+      
+      // Simulate API call with delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Show success message
       toast({
-        title: "Registration Successful",
-        description: "Your application has been submitted for review.",
+        title: "Registration successful",
+        description: "Your application has been submitted for review. We will contact you soon.",
       });
-      setIsSuccess(true);
-    }, 1500);
+      
+      // Redirect to home page
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: "There was a problem with your registration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  // If registration is successful, show success screen
-  if (isSuccess) {
-    return (
-      <Layout>
-        <div className="max-w-3xl mx-auto px-4 py-16">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="bg-green-100 rounded-full p-4 w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="h-10 w-10 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
-                <p className="text-gray-600 mb-6">
-                  Thank you for registering as a doctor with MediWrap. Your application has been submitted for review.
-                  We'll contact you soon with the next steps.
-                </p>
-                <Button className="bg-mediwrap-blue hover:bg-mediwrap-blue-light" asChild>
-                  <a href="/">Return to Home</a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2 text-center">Doctor Registration</h1>
-        <p className="text-gray-500 mb-8 text-center">Join our network of healthcare professionals</p>
-        
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Doctor Registration
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Join our network of healthcare professionals and help patients across the country
+          </p>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Personal & Professional Information</CardTitle>
+            <CardTitle>Apply as a Doctor</CardTitle>
             <CardDescription>
-              Fill in your details to register as a doctor on MediWrap
+              Please complete the following form to register as a doctor in our platform.
+              Your application will be reviewed by our team.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personal Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Personal Information</h3>
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="personal">Personal Information</TabsTrigger>
+                <TabsTrigger value="professional">Professional Details</TabsTrigger>
+                <TabsTrigger value="account">Account Setup</TabsTrigger>
+              </TabsList>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                  <TabsContent value="personal" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="John" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="doctor@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="+1 (555) 123-4567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Address</FormLabel>
+                            <FormControl>
+                              <Input placeholder="123 Main St" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input placeholder="New York" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <FormControl>
+                              <Input placeholder="NY" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country</FormLabel>
+                            <FormControl>
+                              <Input placeholder="USA" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="pincode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pincode/ZIP</FormLabel>
+                            <FormControl>
+                              <Input placeholder="10001" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button type="button" onClick={() => document.querySelector('[data-value="professional"]')?.click()}>
+                        Next: Professional Details
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="professional" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="specialty"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Medical Specialty</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select specialty" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Cardiology">Cardiology</SelectItem>
+                                <SelectItem value="Dermatology">Dermatology</SelectItem>
+                                <SelectItem value="Endocrinology">Endocrinology</SelectItem>
+                                <SelectItem value="Gastroenterology">Gastroenterology</SelectItem>
+                                <SelectItem value="Neurology">Neurology</SelectItem>
+                                <SelectItem value="Oncology">Oncology</SelectItem>
+                                <SelectItem value="Pediatrics">Pediatrics</SelectItem>
+                                <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                                <SelectItem value="Pulmonology">Pulmonology</SelectItem>
+                                <SelectItem value="Radiology">Radiology</SelectItem>
+                                <SelectItem value="Surgery">Surgery</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="experience"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Years of Experience</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select experience" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="0-2">0-2 years</SelectItem>
+                                <SelectItem value="3-5">3-5 years</SelectItem>
+                                <SelectItem value="6-10">6-10 years</SelectItem>
+                                <SelectItem value="11-15">11-15 years</SelectItem>
+                                <SelectItem value="16+">16+ years</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="qualification"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Highest Qualification</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select qualification" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="MBBS">MBBS</SelectItem>
+                                <SelectItem value="MD">MD</SelectItem>
+                                <SelectItem value="MS">MS</SelectItem>
+                                <SelectItem value="DM">DM</SelectItem>
+                                <SelectItem value="MCh">MCh</SelectItem>
+                                <SelectItem value="DNB">DNB</SelectItem>
+                                <SelectItem value="PhD">PhD</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="licenseNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Medical License Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="ML12345678" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <FormField
                       control={form.control}
-                      name="lastName"
+                      name="consultationType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="doctor@example.com" type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+1 234 567 8901" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Professional Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Professional Information</h3>
-                    <FormField
-                      control={form.control}
-                      name="specialty"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Specialty</FormLabel>
+                          <FormLabel>Consultation Type</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select your specialty" />
+                                <SelectValue placeholder="Select type" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {specialties.map((specialty) => (
-                                <SelectItem key={specialty} value={specialty}>
-                                  {specialty}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="online">Online Only</SelectItem>
+                              <SelectItem value="in-person">In-Person Only</SelectItem>
+                              <SelectItem value="both">Both Online and In-Person</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -223,232 +409,87 @@ const DoctorRegistration = () => {
 
                     <FormField
                       control={form.control}
-                      name="qualification"
+                      name="bio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Qualification</FormLabel>
+                          <FormLabel>Professional Bio</FormLabel>
                           <FormControl>
-                            <Input placeholder="MD, MBBS, etc." {...field} />
+                            <Textarea 
+                              placeholder="Please provide a brief description of your professional background, expertise, and approach to patient care."
+                              {...field}
+                              rows={5}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="experience"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Years of Experience</FormLabel>
-                          <FormControl>
-                            <Input placeholder="5" type="number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="licenseNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>License Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="MED12345" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
+                    <div className="flex justify-between">
+                      <Button type="button" variant="outline" onClick={() => document.querySelector('[data-value="personal"]')?.click()}>
+                        Back: Personal Information
+                      </Button>
+                      <Button type="button" onClick={() => document.querySelector('[data-value="account"]')?.click()}>
+                        Next: Account Setup
+                      </Button>
+                    </div>
+                  </TabsContent>
 
-                <Separator />
-
-                {/* Consultation Type */}
-                <FormField
-                  control={form.control}
-                  name="consultationType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Consultation Type</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1 md:flex-row md:space-y-0 md:space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
+                  <TabsContent value="account" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <RadioGroupItem value="online" />
+                              <Input type="password" {...field} />
                             </FormControl>
-                            <FormLabel className="font-normal">
-                              Online Only
-                            </FormLabel>
+                            <FormMessage />
                           </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm Password</FormLabel>
                             <FormControl>
-                              <RadioGroupItem value="offline" />
+                              <Input type="password" {...field} />
                             </FormControl>
-                            <FormLabel className="font-normal">
-                              Offline Only
-                            </FormLabel>
+                            <FormMessage />
                           </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="both" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Both Online & Offline
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        )}
+                      />
+                    </div>
 
-                <Separator />
+                    <div className="mt-6 space-y-4">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-md">
+                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-400">Important Information</h3>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          By submitting this form, you agree to our terms and conditions. Your application will be reviewed by our team, and you may be contacted for verification of your credentials.
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Address Information */}
-                <h3 className="text-lg font-medium">Clinic/Hospital Address</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Medical Street" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="New York" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input placeholder="NY" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input placeholder="USA" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="pincode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pincode/ZIP</FormLabel>
-                        <FormControl>
-                          <Input placeholder="10001" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <Separator />
-
-                {/* Bio */}
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Professional Bio</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Tell us about your professional background and expertise..."
-                          className="min-h-[120px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Separator />
-
-                {/* Account Information */}
-                <h3 className="text-lg font-medium">Account Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <Button type="submit" className="bg-mediwrap-green hover:bg-mediwrap-green-light">
-                    Submit Registration
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                    <div className="flex justify-between">
+                      <Button type="button" variant="outline" onClick={() => document.querySelector('[data-value="professional"]')?.click()}>
+                        Back: Professional Details
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        className="bg-mediwrap-blue hover:bg-mediwrap-blue-light"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit Application"}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </form>
+              </Form>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

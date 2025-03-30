@@ -1,180 +1,124 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { LogIn, UserPlus, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
-  
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
-  });
+  const { login, signup, isLoading, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("login");
 
-  const [signupData, setSignupData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setLoginData({
-      ...loginData,
-      [name]: value,
-    });
-  };
+  // Registration form state
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setSignupData({
-      ...signupData,
-      [name]: value,
-    });
-  };
+  // If user is already logged in, redirect to home
+  if (isAuthenticated) {
+    navigate("/");
+    return null;
+  }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (loginData.email && loginData.password) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to MediWrap!",
-        });
-        navigate("/"); // Redirect to home page after login
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Please check your credentials and try again",
-          variant: "destructive",
-        });
-      }
-    }, 1000);
+    await login(loginEmail, loginPassword);
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Validate password match
-    if (signupData.password !== signupData.confirmPassword) {
-      setIsLoading(false);
-      toast({
-        title: "Passwords do not match",
-        description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
+    
+    if (registerPassword !== confirmPassword) {
+      alert("Passwords do not match");
       return;
     }
-
-    // Simulate sign up process
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (signupData.name && signupData.email && signupData.password) {
-        toast({
-          title: "Account created",
-          description: "Welcome to MediWrap! You're now registered.",
-        });
-        navigate("/"); // Redirect to home page after signup
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: "Please fill all required fields",
-          variant: "destructive",
-        });
-      }
-    }, 1000);
-  };
-
-  const handleForgotPassword = () => {
-    if (!loginData.email) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Password reset email sent",
-      description: "Check your email for instructions to reset your password",
+    
+    await signup({
+      name: registerName,
+      email: registerEmail,
+      password: registerPassword,
+      role: "patient" // Default role for new registrations
     });
   };
 
   return (
     <Layout>
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)] px-4 py-12">
+      <div className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="login" className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
-                <span>Login</span>
-              </TabsTrigger>
-              <TabsTrigger value="signup" className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                <span>Sign up</span>
-              </TabsTrigger>
-            </TabsList>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              Welcome to MediWrap
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Your complete healthcare solution
+            </p>
+          </div>
 
+          <Tabs
+            defaultValue="login"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+            
             <TabsContent value="login">
               <Card>
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl">Login to your account</CardTitle>
+                <CardHeader>
+                  <CardTitle>Account Login</CardTitle>
                   <CardDescription>
-                    Enter your email and password to login
+                    Enter your email and password to access your account.
                   </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <Input
-                        id="login-email"
-                        name="email"
+                      <Label htmlFor="email">Email</Label>
+                      <Input 
+                        id="email" 
                         type="email" 
-                        placeholder="name@example.com"
+                        placeholder="your@email.com" 
                         required
-                        value={loginData.email}
-                        onChange={handleLoginChange}
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="login-password">Password</Label>
-                        <Button 
-                          variant="link" 
-                          className="px-0 text-sm"
-                          type="button"
-                          onClick={handleForgotPassword}
+                        <Label htmlFor="password">Password</Label>
+                        <a 
+                          href="#" 
+                          className="text-sm text-mediwrap-blue hover:underline"
                         >
                           Forgot password?
-                        </Button>
+                        </a>
                       </div>
-                      <Input
-                        id="login-password"
-                        name="password"
-                        type="password"
+                      <Input 
+                        id="password" 
+                        type="password" 
                         required
-                        value={loginData.password}
-                        onChange={handleLoginChange}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
                       />
                     </div>
                   </CardContent>
@@ -184,76 +128,84 @@ const Login = () => {
                       className="w-full bg-mediwrap-blue hover:bg-mediwrap-blue-light"
                       disabled={isLoading}
                     >
-                      {isLoading ? "Logging in..." : "Login"}
+                      {isLoading ? "Logging in..." : "Sign In"}
                     </Button>
                   </CardFooter>
                 </form>
+                <div className="px-6 pb-6 text-center">
+                  <div className="mt-4 text-sm">
+                    <p>
+                      Demo logins:
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                      admin@example.com / password<br />
+                      doctor@example.com / password<br />
+                      patient@example.com / password
+                    </p>
+                  </div>
+                </div>
               </Card>
             </TabsContent>
-
-            <TabsContent value="signup">
+            
+            <TabsContent value="register">
               <Card>
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl">Create an account</CardTitle>
+                <CardHeader>
+                  <CardTitle>Create an Account</CardTitle>
                   <CardDescription>
-                    Enter your details to create a new account
+                    Enter your information to create a new account.
                   </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSignup}>
+                <form onSubmit={handleRegister}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="signup-name">Full Name</Label>
-                      <Input
-                        id="signup-name"
-                        name="name"
-                        placeholder="John Doe"
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="John Doe" 
                         required
-                        value={signupData.name}
-                        onChange={handleSignupChange}
+                        value={registerName}
+                        onChange={(e) => setRegisterName(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <Input
-                        id="signup-email"
-                        name="email"
-                        type="email"
-                        placeholder="name@example.com"
+                      <Label htmlFor="register-email">Email</Label>
+                      <Input 
+                        id="register-email" 
+                        type="email" 
+                        placeholder="your@email.com" 
                         required
-                        value={signupData.email}
-                        onChange={handleSignupChange}
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        name="password"
-                        type="password"
+                      <Label htmlFor="register-password">Password</Label>
+                      <Input 
+                        id="register-password" 
+                        type="password" 
                         required
-                        value={signupData.password}
-                        onChange={handleSignupChange}
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                      <Input
-                        id="signup-confirm-password"
-                        name="confirmPassword"
-                        type="password"
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input 
+                        id="confirm-password" 
+                        type="password" 
                         required
-                        value={signupData.confirmPassword}
-                        onChange={handleSignupChange}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                       />
                     </div>
                   </CardContent>
                   <CardFooter>
                     <Button 
                       type="submit" 
-                      className="w-full bg-mediwrap-green hover:bg-mediwrap-green-light"
+                      className="w-full bg-mediwrap-blue hover:bg-mediwrap-blue-light"
                       disabled={isLoading}
                     >
-                      {isLoading ? "Creating account..." : "Sign up"}
+                      {isLoading ? "Creating Account..." : "Create Account"}
                     </Button>
                   </CardFooter>
                 </form>

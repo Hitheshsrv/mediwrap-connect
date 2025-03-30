@@ -1,90 +1,54 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Video, Users, MapPin, Calendar, Clock, Star } from "lucide-react";
-
-// Mock data for doctors
-const doctors = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    specialty: "Cardiology",
-    hospital: "City Medical Center",
-    rating: 4.9,
-    reviews: 124,
-    image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    available: true,
-    nextAvailable: "Today, 3:00 PM",
-    fee: "$150",
-    education: "Harvard Medical School",
-    experience: "15 years",
-    location: "Downtown Medical Plaza",
-    online: true
-  },
-  {
-    id: 2,
-    name: "Dr. Michael Chen",
-    specialty: "Neurology",
-    hospital: "University Hospital",
-    rating: 4.8,
-    reviews: 98,
-    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    available: true,
-    nextAvailable: "Tomorrow, 10:00 AM",
-    fee: "$180",
-    education: "Stanford University",
-    experience: "12 years",
-    location: "University Medical Center",
-    online: true
-  },
-  {
-    id: 3,
-    name: "Dr. Emily Rodriguez",
-    specialty: "Pediatrics",
-    hospital: "Children's Hospital",
-    rating: 4.9,
-    reviews: 156,
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    available: true,
-    nextAvailable: "Today, 4:30 PM",
-    fee: "$120",
-    education: "Johns Hopkins University",
-    experience: "10 years",
-    location: "Westside Medical Building",
-    online: true
-  },
-  {
-    id: 4,
-    name: "Dr. James Wilson",
-    specialty: "Orthopedics",
-    hospital: "Sports Medicine Center",
-    rating: 4.7,
-    reviews: 87,
-    image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    available: true,
-    nextAvailable: "Friday, 1:00 PM",
-    fee: "$160",
-    education: "UCLA Medical School",
-    experience: "18 years",
-    location: "Eastside Sports Clinic",
-    online: false
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import apiClient, { Doctor } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const Consultation = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [consultationType, setConsultationType] = useState("all");
   const { toast } = useToast();
 
-  const handleBookAppointment = (doctorName: string, type: string) => {
+  // Fetch doctors from API using React Query
+  const { data: doctors = [], isLoading } = useQuery({
+    queryKey: ['doctors'],
+    queryFn: () => apiClient.getDoctors(),
+  });
+
+  const handleBookAppointment = (doctorId: number, doctorName: string, type: string) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to book an appointment.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    // In a real app, we would show a booking form modal here
+    // For this demo, we'll just show a toast confirmation
     toast({
       title: "Appointment Requested",
       description: `Your ${type} appointment with ${doctorName} has been requested. We'll confirm shortly.`,
+    });
+    
+    // Create an appointment in the backend (mock)
+    apiClient.bookAppointment(doctorId, {
+      type: type === "video" ? "video" : "in-person",
+      date: new Date().toISOString().split('T')[0], // Today
+      time: new Date().toLocaleTimeString(),
     });
   };
 
@@ -163,7 +127,11 @@ const Consultation = () => {
           
           <TabsContent value="all" className="mt-6">
             <div className="grid grid-cols-1 gap-6">
-              {filteredDoctors.length > 0 ? (
+              {isLoading ? (
+                <div className="text-center py-16">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">Loading doctors...</p>
+                </div>
+              ) : filteredDoctors.length > 0 ? (
                 filteredDoctors.map((doctor) => (
                   <Card key={doctor.id} className="overflow-hidden">
                     <div className="flex flex-col md:flex-row">
@@ -223,7 +191,7 @@ const Consultation = () => {
                             <Button
                               variant="outline"
                               className="flex items-center border-mediwrap-blue text-mediwrap-blue hover:bg-mediwrap-blue/10"
-                              onClick={() => handleBookAppointment(doctor.name, "video")}
+                              onClick={() => handleBookAppointment(doctor.id, doctor.name, "video")}
                             >
                               <Video className="mr-2 h-4 w-4" />
                               Book Video Consultation
@@ -232,7 +200,7 @@ const Consultation = () => {
                           <Button
                             variant={doctor.online ? "outline" : "default"}
                             className={doctor.online ? "flex items-center border-mediwrap-green text-mediwrap-green hover:bg-mediwrap-green/10" : "flex items-center bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"}
-                            onClick={() => handleBookAppointment(doctor.name, "in-person")}
+                            onClick={() => handleBookAppointment(doctor.id, doctor.name, "in-person")}
                           >
                             <MapPin className="mr-2 h-4 w-4" />
                             Book In-Person Visit
