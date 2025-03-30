@@ -57,6 +57,7 @@ const DoctorRegistration = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("personal");
 
   // Initialize form
   const form = useForm<FormValues>({
@@ -81,6 +82,11 @@ const DoctorRegistration = () => {
       confirmPassword: "",
     },
   });
+
+  // Function to change tab
+  const changeTab = (tabId: string) => {
+    setActiveTab(tabId);
+  };
 
   // Submit handler
   const onSubmit = async (values: FormValues) => {
@@ -136,7 +142,7 @@ const DoctorRegistration = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="personal" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="personal">Personal Information</TabsTrigger>
                 <TabsTrigger value="professional">Professional Details</TabsTrigger>
@@ -276,7 +282,7 @@ const DoctorRegistration = () => {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button type="button" onClick={() => document.querySelector('[data-value="professional"]')?.click()}>
+                      <Button type="button" onClick={() => changeTab("professional")}>
                         Next: Professional Details
                       </Button>
                     </div>
@@ -426,10 +432,10 @@ const DoctorRegistration = () => {
                     />
 
                     <div className="flex justify-between">
-                      <Button type="button" variant="outline" onClick={() => document.querySelector('[data-value="personal"]')?.click()}>
+                      <Button type="button" variant="outline" onClick={() => changeTab("personal")}>
                         Back: Personal Information
                       </Button>
-                      <Button type="button" onClick={() => document.querySelector('[data-value="account"]')?.click()}>
+                      <Button type="button" onClick={() => changeTab("account")}>
                         Next: Account Setup
                       </Button>
                     </div>
@@ -475,7 +481,7 @@ const DoctorRegistration = () => {
                     </div>
 
                     <div className="flex justify-between">
-                      <Button type="button" variant="outline" onClick={() => document.querySelector('[data-value="professional"]')?.click()}>
+                      <Button type="button" variant="outline" onClick={() => changeTab("professional")}>
                         Back: Professional Details
                       </Button>
                       <Button 
