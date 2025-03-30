@@ -197,7 +197,7 @@ const Admin = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.status === "Active" ? "success" : "destructive"}>
+                            <Badge variant={user.status === "Active" ? "default" : "destructive"}>
                               {user.status}
                             </Badge>
                           </TableCell>
@@ -249,7 +249,7 @@ const Admin = () => {
                             <Badge variant={
                               ticket.status === "Open" ? "destructive" : 
                               ticket.status === "In Progress" ? "outline" : 
-                              "success"
+                              "default"
                             }>
                               {ticket.status}
                             </Badge>
@@ -319,7 +319,7 @@ const Admin = () => {
                           <TableCell>{appointment.time}</TableCell>
                           <TableCell>
                             <Badge variant={
-                              appointment.status === "Confirmed" ? "success" : 
+                              appointment.status === "Confirmed" ? "default" : 
                               appointment.status === "Pending" ? "outline" : 
                               "destructive"
                             }>
