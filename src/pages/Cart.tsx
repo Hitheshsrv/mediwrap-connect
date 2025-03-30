@@ -84,7 +84,7 @@ const Cart = () => {
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h2 className="text-2xl font-medium mb-2">Your cart is empty</h2>
             <p className="text-gray-500 mb-6">Browse our pharmacy for medicines and health products.</p>
-            <Button href="/pharmacy" asChild className="bg-mediwrap-blue hover:bg-mediwrap-blue-light">
+            <Button asChild className="bg-mediwrap-blue hover:bg-mediwrap-blue-light">
               <a href="/pharmacy">Continue Shopping</a>
             </Button>
           </div>
