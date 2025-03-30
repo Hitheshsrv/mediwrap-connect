@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Quotes } from "lucide-react";
+import { Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -41,7 +41,7 @@ const Testimonials = () => {
             <Card key={index} className="border-0 shadow-lg">
               <CardContent className="p-8 flex flex-col h-full">
                 <div className="flex-grow">
-                  <Quotes className="w-8 h-8 text-mediwrap-blue/30 dark:text-mediwrap-blue-light/30 mb-4" />
+                  <Quote className="w-8 h-8 text-mediwrap-blue/30 dark:text-mediwrap-blue-light/30 mb-4" />
                   <p className="text-gray-700 dark:text-gray-300 mb-6">"{testimonial.content}"</p>
                 </div>
                 <div className="flex items-center mt-6">
