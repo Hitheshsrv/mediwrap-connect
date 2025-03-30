@@ -225,14 +225,14 @@ export class ApiClient {
     // For now, return mock response
     return new Promise((resolve) => {
       setTimeout(() => {
-        const newAppointment = {
+        const newAppointment: Appointment = {
           id: Math.floor(Math.random() * 10000),
           doctorId,
           patientId: 1, // Would come from auth in a real app
           date: appointmentData.date || new Date().toISOString().split('T')[0],
           time: appointmentData.time || "10:00 AM",
           type: appointmentData.type || "video",
-          status: "pending"
+          status: "pending" // Explicitly set to a valid literal value from the type
         };
         
         // Add to mock appointments
