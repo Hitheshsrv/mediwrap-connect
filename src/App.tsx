@@ -11,6 +11,11 @@ import Consultation from "./pages/Consultation";
 import Pharmacy from "./pages/Pharmacy";
 import BloodDonation from "./pages/BloodDonation";
 import Community from "./pages/Community";
+import Cart from "./pages/Cart";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+import DoctorRegistration from "./pages/DoctorRegistration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +32,11 @@ const App = () => (
           <Route path="/pharmacy" element={<Pharmacy />} />
           <Route path="/blood-donation" element={<BloodDonation />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/doctor-registration" element={<DoctorRegistration />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

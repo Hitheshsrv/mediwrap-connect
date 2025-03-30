@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, User, ShoppingCart, Moon, Sun } from "lucide-react";
+import { Menu, X, Heart, User, ShoppingCart, Moon, Sun, Stethoscope } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const Navbar = () => {
@@ -47,6 +47,10 @@ const Navbar = () => {
             </Link>
             <Link to="/community" className="text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light px-3 py-2 rounded-md text-sm font-medium">
               Community
+            </Link>
+            <Link to="/doctor-registration" className="text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1">
+              <Stethoscope className="h-4 w-4" />
+              <span>For Doctors</span>
             </Link>
           </div>
 
@@ -118,6 +122,16 @@ const Navbar = () => {
             >
               Community
             </Link>
+            <Link
+              to="/doctor-registration"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              onClick={() => setIsOpen(false)}
+            >
+              <div className="flex items-center gap-2">
+                <Stethoscope className="h-4 w-4" />
+                <span>For Doctors</span>
+              </div>
+            </Link>
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center px-5">
@@ -139,7 +153,14 @@ const Navbar = () => {
                 </Link>
               </div>
             </div>
-            <div className="mt-3 px-2">
+            <div className="mt-3 px-2 flex flex-col space-y-2">
+              <Link
+                to="/profile"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                onClick={() => setIsOpen(false)}
+              >
+                My Profile
+              </Link>
               <Link
                 to="/login"
                 className="block w-full text-center px-4 py-2 text-base font-medium text-white bg-mediwrap-blue hover:bg-mediwrap-blue-light rounded-md"
