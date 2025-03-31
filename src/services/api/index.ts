@@ -5,6 +5,7 @@
 import { DoctorService } from "./doctor-service";
 import { AppointmentService } from "./appointment-service";
 import { ProductService } from "./product-service";
+import { Doctor, Appointment, Product } from "./types";
 
 // Re-export types
 export type { Doctor, Appointment, Product } from "./types";
