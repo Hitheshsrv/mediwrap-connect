@@ -15,7 +15,7 @@ export interface Doctor {
   reviews: number;
   image: string;
   available: boolean;
-  next_available: Date;
+  next_available: string; // Changed from Date to string to match Supabase's output
   fee: number;
   education: string;
   experience: string;
@@ -93,9 +93,17 @@ export class ApiClient {
   // Add a new doctor
   async addDoctor(doctorData: Omit<Doctor, "id">): Promise<Doctor | null> {
     try {
+      // Convert next_available to string if it's a Date object
+      const processedData = {
+        ...doctorData,
+        next_available: doctorData.next_available instanceof Date 
+          ? doctorData.next_available.toISOString() 
+          : doctorData.next_available
+      };
+
       const { data, error } = await supabase
         .from('doctors')
-        .insert([doctorData])
+        .insert([processedData])
         .select()
         .single();
       
@@ -119,9 +127,17 @@ export class ApiClient {
   // Update a doctor
   async updateDoctor(id: string, updates: Partial<Doctor>): Promise<Doctor | undefined> {
     try {
+      // Convert next_available to string if it's a Date object
+      const processedUpdates = {
+        ...updates,
+        next_available: updates.next_available instanceof Date 
+          ? updates.next_available.toISOString() 
+          : updates.next_available
+      };
+
       const { data, error } = await supabase
         .from('doctors')
-        .update(updates)
+        .update(processedUpdates)
         .eq('id', id)
         .select()
         .single();
