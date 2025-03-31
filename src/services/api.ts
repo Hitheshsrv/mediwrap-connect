@@ -93,11 +93,12 @@ export class ApiClient {
   // Add a new doctor
   async addDoctor(doctorData: Omit<Doctor, "id">): Promise<Doctor | null> {
     try {
-      // Convert next_available to string if it's a Date object
+      // Process next_available field properly
       const processedData = {
         ...doctorData,
-        next_available: doctorData.next_available instanceof Date 
-          ? doctorData.next_available.toISOString() 
+        // Convert to string if it's not already a string
+        next_available: typeof doctorData.next_available !== 'string'
+          ? (doctorData.next_available ? doctorData.next_available.toString() : null)
           : doctorData.next_available
       };
 
@@ -127,12 +128,15 @@ export class ApiClient {
   // Update a doctor
   async updateDoctor(id: string, updates: Partial<Doctor>): Promise<Doctor | undefined> {
     try {
-      // Convert next_available to string if it's a Date object
+      // Process next_available field properly
       const processedUpdates = {
         ...updates,
-        next_available: updates.next_available instanceof Date 
-          ? updates.next_available.toISOString() 
-          : updates.next_available
+        // Only process next_available if it exists in updates
+        ...(updates.next_available !== undefined && {
+          next_available: typeof updates.next_available !== 'string'
+            ? (updates.next_available ? updates.next_available.toString() : null)
+            : updates.next_available
+        })
       };
 
       const { data, error } = await supabase
