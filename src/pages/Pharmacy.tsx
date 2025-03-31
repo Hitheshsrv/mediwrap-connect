@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart, Upload, Star, Plus, Minus } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { useNavigate } from "react-router-dom";
 
 // Mock data for products
 const products = [
@@ -103,64 +105,41 @@ const products = [
 const Pharmacy = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [cart, setCart] = useState<{ id: number; name: string; price: number; quantity: number; image: string }[]>([]);
   const [showCart, setShowCart] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, subtotal } = useCart();
 
   const handleAddToCart = (product: typeof products[0]) => {
-    const existingProduct = cart.find(item => item.id === product.id);
-    
-    if (existingProduct) {
-      // If product already exists in cart, increase quantity
-      setCart(cart.map(item => 
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      ));
-    } else {
-      // Add new product to cart
-      setCart([...cart, { 
-        id: product.id, 
-        name: product.name, 
-        price: product.price, 
-        quantity: 1, 
-        image: product.image 
-      }]);
-    }
-    
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.image
     });
   };
 
   const handleRemoveFromCart = (productId: number) => {
-    const existingProduct = cart.find(item => item.id === productId);
-    
-    if (existingProduct && existingProduct.quantity > 1) {
-      // If quantity > 1, decrease quantity
-      setCart(cart.map(item => 
-        item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
-      ));
-    } else {
-      // Remove product from cart
-      setCart(cart.filter(item => item.id !== productId));
-    }
+    removeFromCart(productId);
   };
 
   const handleUploadPrescription = () => {
     toast({
       title: "Prescription Upload",
-      description: "Prescription upload feature would be implemented here.",
+      description: "We'll implement prescription upload functionality soon!",
     });
   };
 
   const calculateTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+    return subtotal + 5; // Add $5 for shipping
   };
 
   // Filter products based on search term and filter type
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
+                          product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterType === "prescription" && !product.prescription) return false;
     if (filterType === "otc" && product.prescription) return false;
@@ -249,9 +228,9 @@ const Pharmacy = () => {
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
             View Cart
-            {cart.length > 0 && (
+            {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-mediwrap-red text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {cart.reduce((total, item) => total + item.quantity, 0)}
+                {totalItems}
               </span>
             )}
           </Button>
@@ -259,43 +238,49 @@ const Pharmacy = () => {
         
         {/* Product Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden flex flex-col h-full">
-              <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
-                <img 
-                  src={product.image} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-                {product.prescription && (
-                  <div className="absolute top-2 left-2 bg-mediwrap-blue text-white text-xs px-2 py-1 rounded">
-                    Prescription Required
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-4 flex-grow">
-                <div className="mb-2 flex items-center">
-                  <span className="text-sm text-mediwrap-green font-medium">{product.category}</span>
-                  <div className="ml-auto flex items-center">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{product.rating} ({product.reviews})</span>
-                  </div>
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <Card key={product.id} className="overflow-hidden flex flex-col h-full">
+                <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {product.prescription && (
+                    <div className="absolute top-2 left-2 bg-mediwrap-blue text-white text-xs px-2 py-1 rounded">
+                      Prescription Required
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-medium text-lg mb-1">{product.name}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.description}</p>
-                <p className="text-lg font-bold text-mediwrap-blue dark:text-mediwrap-blue-light">${product.price.toFixed(2)}</p>
-              </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button 
-                  className="w-full bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"
-                  onClick={() => handleAddToCart(product)}
-                  disabled={product.prescription}
-                >
-                  {product.prescription ? "Prescription Required" : "Add to Cart"}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardContent className="p-4 flex-grow">
+                  <div className="mb-2 flex items-center">
+                    <span className="text-sm text-mediwrap-green font-medium">{product.category}</span>
+                    <div className="ml-auto flex items-center">
+                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                      <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">{product.rating} ({product.reviews})</span>
+                    </div>
+                  </div>
+                  <h3 className="font-medium text-lg mb-1">{product.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.description}</p>
+                  <p className="text-lg font-bold text-mediwrap-blue dark:text-mediwrap-blue-light">${product.price.toFixed(2)}</p>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button 
+                    className="w-full bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.prescription}
+                  >
+                    {product.prescription ? "Prescription Required" : "Add to Cart"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500">No products found matching your search criteria.</p>
+            </div>
+          )}
         </div>
         
         {/* Shopping Cart Sidebar */}
@@ -310,14 +295,14 @@ const Pharmacy = () => {
               </div>
               
               <div className="p-6">
-                {cart.length === 0 ? (
+                {cartItems.length === 0 ? (
                   <div className="text-center py-16">
                     <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-4 text-gray-600 dark:text-gray-400">Your cart is empty</p>
                   </div>
                 ) : (
                   <div>
-                    {cart.map((item) => (
+                    {cartItems.map((item) => (
                       <div key={item.id} className="flex items-center py-4 border-b border-gray-200 dark:border-gray-800">
                         <img 
                           src={item.image} 
@@ -342,7 +327,7 @@ const Pharmacy = () => {
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8"
-                            onClick={() => handleAddToCart(products.find(p => p.id === item.id)!)}
+                            onClick={() => addToCart({...item, quantity: 1})}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -353,7 +338,7 @@ const Pharmacy = () => {
                     <div className="mt-6 py-4 border-t border-gray-200 dark:border-gray-800">
                       <div className="flex justify-between mb-4">
                         <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                        <span className="font-medium">${calculateTotal()}</span>
+                        <span className="font-medium">${subtotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mb-4">
                         <span className="text-gray-600 dark:text-gray-400">Delivery:</span>
@@ -361,21 +346,26 @@ const Pharmacy = () => {
                       </div>
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total:</span>
-                        <span>${(parseFloat(calculateTotal()) + 5).toFixed(2)}</span>
+                        <span>${calculateTotal().toFixed(2)}</span>
                       </div>
                       
-                      <Button 
-                        className="w-full mt-6 bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"
-                        onClick={() => {
-                          setShowCart(false);
-                          toast({
-                            title: "Order Placed",
-                            description: "Your order has been placed successfully.",
-                          });
-                        }}
-                      >
-                        Checkout
-                      </Button>
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate("/cart")}
+                        >
+                          View Cart
+                        </Button>
+                        <Button 
+                          className="bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"
+                          onClick={() => {
+                            navigate("/cart");
+                            setShowCart(false);
+                          }}
+                        >
+                          Checkout
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}

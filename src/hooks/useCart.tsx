@@ -1,15 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from "@/hooks/use-toast";
-
-// Define cart item interface
-export interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { CartItem } from '@/services/api/types';
 
 // Cart context interface
 interface CartContextType {
@@ -84,13 +76,30 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const item = prevItems.find(item => item.id === id);
       
       if (item) {
-        toast({
-          title: "Item removed",
-          description: `${item.name} has been removed from your cart`,
-        });
+        if (item.quantity > 1) {
+          // If quantity > 1, decrease quantity
+          const updatedItems = prevItems.map(cartItem => 
+            cartItem.id === id ? { ...cartItem, quantity: cartItem.quantity - 1 } : cartItem
+          );
+          
+          toast({
+            title: "Cart updated",
+            description: `Decreased ${item.name} quantity`,
+          });
+          
+          return updatedItems;
+        } else {
+          // If quantity is 1, remove the item
+          toast({
+            title: "Item removed",
+            description: `${item.name} has been removed from your cart`,
+          });
+          
+          return prevItems.filter(cartItem => cartItem.id !== id);
+        }
       }
       
-      return prevItems.filter(item => item.id !== id);
+      return prevItems;
     });
   };
   
