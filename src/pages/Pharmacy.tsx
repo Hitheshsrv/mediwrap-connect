@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart, Upload, Star, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
+import PrescriptionUpload from "@/components/pharmacy/PrescriptionUpload";
 
 // Mock data for products
 const products = [
@@ -106,11 +107,37 @@ const Pharmacy = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [showCart, setShowCart] = useState(false);
+  const [searchResults, setSearchResults] = useState(products);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, subtotal } = useCart();
 
-  const handleAddToCart = (product: typeof products[0]) => {
+  // Update search results whenever search term or filter type changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      // If search term is empty, just apply the filter
+      const filtered = filterProducts(products, filterType);
+      setSearchResults(filtered);
+    } else {
+      // Apply both search term and filter
+      const filtered = filterProducts(products, filterType).filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setSearchResults(filtered);
+    }
+  }, [searchTerm, filterType]);
+
+  // Filter products based on filter type
+  const filterProducts = (productsToFilter, filter) => {
+    if (filter === "all") return productsToFilter;
+    if (filter === "otc") return productsToFilter.filter(product => !product.prescription);
+    if (filter === "prescription") return productsToFilter.filter(product => product.prescription);
+    return productsToFilter;
+  };
+
+  const handleAddToCart = (product) => {
     addToCart({
       id: product.id,
       name: product.name,
@@ -118,34 +145,31 @@ const Pharmacy = () => {
       quantity: 1,
       image: product.image
     });
+    
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+    });
   };
 
-  const handleRemoveFromCart = (productId: number) => {
+  const handleRemoveFromCart = (productId) => {
     removeFromCart(productId);
   };
 
-  const handleUploadPrescription = () => {
+  const handleSearch = (e) => {
+    e.preventDefault();
+    // The search is already handled by the useEffect
+    // This is just to handle the form submission
+    
     toast({
-      title: "Prescription Upload",
-      description: "We'll implement prescription upload functionality soon!",
+      title: "Search results",
+      description: `Found ${searchResults.length} products matching "${searchTerm}"`,
     });
   };
 
   const calculateTotal = () => {
     return subtotal + 5; // Add $5 for shipping
   };
-
-  // Filter products based on search term and filter type
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (filterType === "prescription" && !product.prescription) return false;
-    if (filterType === "otc" && product.prescription) return false;
-    
-    return matchesSearch;
-  });
 
   return (
     <Layout>
@@ -163,21 +187,12 @@ const Pharmacy = () => {
           
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
             <div className="bg-white dark:bg-card rounded-lg shadow-md p-6 flex flex-col items-center justify-center hover:shadow-lg transition-shadow">
-              <Button 
-                className="bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white w-full h-32 text-lg"
-                onClick={handleUploadPrescription}
-              >
-                <Upload className="w-6 h-6 mr-2" />
-                Upload Prescription
-              </Button>
-              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                Upload your doctor's prescription for medicine delivery
-              </p>
+              <PrescriptionUpload />
             </div>
             <div className="bg-white dark:bg-card rounded-lg shadow-md p-6 flex flex-col items-center justify-center hover:shadow-lg transition-shadow">
               <div className="w-full">
                 <h3 className="text-lg font-medium mb-4">Search Products</h3>
-                <div className="flex">
+                <form onSubmit={handleSearch} className="flex">
                   <Input
                     type="text"
                     placeholder="Search medicines and health products"
@@ -185,10 +200,10 @@ const Pharmacy = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
-                  <Button className="ml-2 bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white">
+                  <Button type="submit" className="ml-2 bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white">
                     <Search className="h-4 w-4" />
                   </Button>
-                </div>
+                </form>
               </div>
             </div>
           </div>
@@ -238,8 +253,8 @@ const Pharmacy = () => {
         
         {/* Product Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
+          {searchResults.length > 0 ? (
+            searchResults.map((product) => (
               <Card key={product.id} className="overflow-hidden flex flex-col h-full">
                 <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
                   <img 

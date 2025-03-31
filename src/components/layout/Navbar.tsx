@@ -3,12 +3,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Heart, User, ShoppingCart, Moon, Sun, Stethoscope } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { totalItems } = useCart(); // Use the cart hook to get the total items
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -61,9 +63,11 @@ const Navbar = () => {
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="relative text-gray-700 dark:text-gray-300">
                 <ShoppingCart className="h-5 w-5" />
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
-                  0
-                </span>
+                {totalItems > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
+                    {totalItems}
+                  </span>
+                )}
               </Button>
             </Link>
             <Link to="/profile">
@@ -83,6 +87,16 @@ const Navbar = () => {
             <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300">
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="relative text-gray-700 dark:text-gray-300">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" onClick={toggleMenu} className="text-gray-700 dark:text-gray-300">
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -146,9 +160,11 @@ const Navbar = () => {
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-gray-700 dark:text-gray-300">
                     <ShoppingCart className="h-5 w-5" />
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
-                      0
-                    </span>
+                    {totalItems > 0 && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
+                        {totalItems}
+                      </span>
+                    )}
                   </Button>
                 </Link>
               </div>
