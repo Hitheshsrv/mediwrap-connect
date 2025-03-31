@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthError, User } from '@supabase/supabase-js';
 
@@ -39,25 +39,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Set up auth state listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
+        (event, session) => {
+          console.log("Auth state changed:", event, session);
           if (session && session.user) {
             try {
               // Fetch user profile
-              const { data: profile } = await supabase
+              supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', session.user.id)
-                .single();
-              
-              // Create user data object
-              setUser({
-                id: session.user.id,
-                email: session.user.email || '',
-                name: profile?.name || session.user.email?.split('@')[0] || '',
-                role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
-              });
+                .single()
+                .then(({ data: profile, error }) => {
+                  if (error) {
+                    console.error('Error fetching user profile:', error);
+                    // If profile fetch fails, use basic user data
+                    setUser({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      name: session.user.email?.split('@')[0] || '',
+                      role: 'patient'
+                    });
+                  } else {
+                    // Create user data object
+                    setUser({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      name: profile?.name || session.user.email?.split('@')[0] || '',
+                      role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
+                    });
+                  }
+                  setIsLoading(false);
+                });
             } catch (err) {
-              console.error('Error fetching user profile:', err);
+              console.error('Error in auth state change:', err);
               // If profile fetch fails, use basic user data
               setUser({
                 id: session.user.id,
@@ -65,11 +79,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 name: session.user.email?.split('@')[0] || '',
                 role: 'patient'
               });
+              setIsLoading(false);
             }
           } else {
             setUser(null);
+            setIsLoading(false);
           }
-          setIsLoading(false);
         }
       );
       
@@ -78,21 +93,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session && session.user) {
         try {
           // Fetch user profile
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
           
-          // Create user data object
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: profile?.name || session.user.email?.split('@')[0] || '',
-            role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
-          });
+          if (error) {
+            console.error('Error fetching user profile:', error);
+            // If profile fetch fails, use basic user data
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.email?.split('@')[0] || '',
+              role: 'patient'
+            });
+          } else {
+            // Create user data object
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: profile?.name || session.user.email?.split('@')[0] || '',
+              role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
+            });
+          }
         } catch (err) {
-          console.error('Error fetching user profile:', err);
+          console.error('Error fetching initial user profile:', err);
           // If profile fetch fails, use basic user data
           setUser({
             id: session.user.id,
@@ -115,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Login function
   const login = async (email: string, password: string) => {
+    console.log("Login attempt:", email);
     setIsLoading(true);
     setError(null);
     
@@ -128,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
+      console.log("Login successful:", data);
       toast({
         title: "Login successful",
         description: `Welcome back!`,
@@ -137,6 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error instanceof AuthError) {
         errorMessage = error.message;
       }
+      console.error("Login error:", errorMessage);
       setError(errorMessage);
       toast({
         title: "Login failed",
@@ -150,12 +179,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   // Signup function
   const signup = async ({ email, password, name, role = 'patient' }: { email: string, password: string, name: string, role?: 'patient' | 'doctor' | 'admin' }) => {
+    console.log("Signup attempt:", email, name, role);
     setIsLoading(true);
     setError(null);
     
     try {
       // Register the user
-      const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -170,9 +200,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw signUpError;
       }
       
+      const newUser = data.user;
+      
       if (!newUser) {
         throw new Error('Failed to create user account');
       }
+      
+      console.log("User created:", newUser);
       
       // Create user profile
       const { error: profileError } = await supabase.from('profiles').insert([
@@ -184,6 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ]);
       
       if (profileError) {
+        console.error("Profile creation error:", profileError);
         throw profileError;
       }
       
@@ -198,6 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
+      console.error("Signup error:", errorMessage);
       setError(errorMessage);
       toast({
         title: "Registration failed",
@@ -214,6 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      console.log("User logged out");
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -15,47 +15,105 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, signup, isLoading, isAuthenticated } = useAuth();
+  const { login, signup, isLoading, isAuthenticated, error } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("login");
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Registration form state
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  // Clear errors when changing tabs
+  useEffect(() => {
+    setLoginError(null);
+    setRegisterError(null);
+  }, [activeTab]);
 
   // If user is already logged in, redirect to home
-  if (isAuthenticated) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(loginEmail, loginPassword);
+    setLoginError(null);
+    
+    if (!loginEmail || !loginPassword) {
+      setLoginError("Please enter both email and password");
+      return;
+    }
+    
+    try {
+      await login(loginEmail, loginPassword);
+      // The navigation to home page will happen in the useEffect when isAuthenticated changes
+    } catch (err) {
+      console.error("Login error:", err);
+      if (err instanceof Error) {
+        setLoginError(err.message);
+      } else {
+        setLoginError("An error occurred during login");
+      }
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError(null);
     
-    if (registerPassword !== confirmPassword) {
-      alert("Passwords do not match");
+    if (!registerName || !registerEmail || !registerPassword || !confirmPassword) {
+      setRegisterError("All fields are required");
       return;
     }
     
-    await signup({
-      name: registerName,
-      email: registerEmail,
-      password: registerPassword,
-      role: "patient" // Default role for new registrations
-    });
+    if (registerPassword !== confirmPassword) {
+      setRegisterError("Passwords do not match");
+      return;
+    }
+    
+    if (registerPassword.length < 6) {
+      setRegisterError("Password must be at least 6 characters");
+      return;
+    }
+    
+    try {
+      await signup({
+        name: registerName,
+        email: registerEmail,
+        password: registerPassword,
+        role: "patient" // Default role for new registrations
+      });
+      
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to confirm your account",
+      });
+      
+      // Switch to login tab after successful registration
+      setActiveTab("login");
+    } catch (err) {
+      console.error("Registration error:", err);
+      if (err instanceof Error) {
+        setRegisterError(err.message);
+      } else {
+        setRegisterError("An error occurred during registration");
+      }
+    }
   };
 
   return (
@@ -92,6 +150,12 @@ const Login = () => {
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                   <CardContent className="space-y-4">
+                    {loginError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{loginError}</AlertDescription>
+                      </Alert>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input 
@@ -157,6 +221,12 @@ const Login = () => {
                 </CardHeader>
                 <form onSubmit={handleRegister}>
                   <CardContent className="space-y-4">
+                    {registerError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{registerError}</AlertDescription>
+                      </Alert>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
                       <Input 
