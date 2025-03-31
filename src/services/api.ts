@@ -98,7 +98,7 @@ export class ApiClient {
         ...doctorData,
         // Convert to string if it's not already a string
         next_available: typeof doctorData.next_available !== 'string'
-          ? (doctorData.next_available ? doctorData.next_available.toString() : null)
+          ? (doctorData.next_available ? String(doctorData.next_available) : null)
           : doctorData.next_available
       };
 
@@ -134,7 +134,7 @@ export class ApiClient {
         // Only process next_available if it exists in updates
         ...(updates.next_available !== undefined && {
           next_available: typeof updates.next_available !== 'string'
-            ? (updates.next_available ? updates.next_available.toString() : null)
+            ? (updates.next_available ? String(updates.next_available) : null)
             : updates.next_available
         })
       };
