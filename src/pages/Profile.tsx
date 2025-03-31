@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,15 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import apiClient, { Appointment } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
+import apiClient from "@/services/api";
 import { CalendarDays, Clock, User, MapPin, Phone, Mail, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   // If not authenticated, redirect to login
   useEffect(() => {
@@ -25,23 +25,39 @@ const Profile = () => {
   }, [isAuthenticated, navigate]);
 
   // Fetch user appointments
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (user) {
-        setIsLoading(true);
-        try {
-          const userAppointments = await apiClient.getPatientAppointments(user.id);
-          setAppointments(userAppointments);
-        } catch (error) {
-          console.error("Failed to fetch appointments:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
+  const { 
+    data: appointments = [], 
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey: ['userAppointments', user?.id],
+    queryFn: () => {
+      if (!user) return [];
+      return apiClient.getPatientAppointments(user.id);
+    },
+    enabled: !!user,
+  });
 
-    fetchAppointments();
-  }, [user]);
+  // Listen for real-time changes to appointments
+  useEffect(() => {
+    if (user) {
+      const channel = supabase
+        .channel('public:appointments')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'appointments',
+          filter: `patient_id=eq.${user.id}`
+        }, () => {
+          refetch();
+        })
+        .subscribe();
+        
+      return () => {
+        channel.unsubscribe();
+      };
+    }
+  }, [user, refetch]);
 
   if (!isAuthenticated || !user) {
     return null; // Don't render anything if not authenticated
@@ -59,7 +75,7 @@ const Profile = () => {
                   <Button 
                     variant="outline" 
                     className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={logout}
+                    onClick={() => logout()}
                   >
                     Logout
                   </Button>
@@ -126,8 +142,8 @@ const Profile = () => {
                                   <User className="h-6 w-6 text-mediwrap-blue" />
                                 </div>
                                 <div className="ml-4">
-                                  <p className="font-semibold">Dr. Sarah Johnson</p>
-                                  <p className="text-sm text-gray-500">Cardiology Specialist</p>
+                                  <p className="font-semibold">Doctor #{appointment.doctor_id}</p>
+                                  <p className="text-sm text-gray-500">Medical Specialist</p>
                                 </div>
                               </div>
                               
@@ -143,7 +159,11 @@ const Profile = () => {
                               </div>
                               
                               <div className="mt-4 md:mt-0">
-                                <Badge variant={appointment.status === "confirmed" ? "default" : appointment.status === "pending" ? "outline" : "destructive"}>
+                                <Badge variant={
+                                  appointment.status === "confirmed" ? "default" : 
+                                  appointment.status === "pending" ? "outline" : 
+                                  "destructive"
+                                }>
                                   {appointment.status}
                                 </Badge>
                               </div>
@@ -151,7 +171,12 @@ const Profile = () => {
                             
                             <div className="flex justify-end mt-4 space-x-2">
                               <Button variant="outline" size="sm">Reschedule</Button>
-                              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => apiClient.updateAppointmentStatus(appointment.id, "canceled")}
+                              >
                                 Cancel
                               </Button>
                             </div>

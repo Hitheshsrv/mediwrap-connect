@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Video, Users, MapPin, Calendar, Clock, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Doctor } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Consultation = () => {
   const navigate = useNavigate();
@@ -19,14 +19,29 @@ const Consultation = () => {
   const [consultationType, setConsultationType] = useState("all");
   const { toast } = useToast();
 
-  // Fetch doctors from API using React Query
-  const { data: doctors = [], isLoading } = useQuery({
+  const { data: doctors = [], isLoading, refetch } = useQuery({
     queryKey: ['doctors'],
     queryFn: () => apiClient.getDoctors(),
   });
 
-  const handleBookAppointment = (doctorId: number, doctorName: string, type: string) => {
-    // Check if user is authenticated
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:doctors')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'doctors' 
+      }, () => {
+        refetch();
+      })
+      .subscribe();
+      
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [refetch]);
+
+  const handleBookAppointment = (doctorId: string, doctorName: string, type: string) => {
     if (!isAuthenticated) {
       toast({
         title: "Login Required",
@@ -37,26 +52,22 @@ const Consultation = () => {
       return;
     }
 
-    // In a real app, we would show a booking form modal here
-    // For this demo, we'll just show a toast confirmation
     toast({
       title: "Appointment Requested",
       description: `Your ${type} appointment with ${doctorName} has been requested. We'll confirm shortly.`,
     });
     
-    // Create an appointment in the backend (mock)
     apiClient.bookAppointment(doctorId, {
       type: type === "video" ? "video" : "in-person",
-      date: new Date().toISOString().split('T')[0], // Today
+      date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString(),
     });
   };
 
-  // Filter doctors based on search term and consultation type
   const filteredDoctors = doctors.filter((doctor) => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase());
+                       doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (consultationType === "online" && !doctor.online) return false;
     if (consultationType === "in-person" && doctor.online) return false;
@@ -66,7 +77,6 @@ const Consultation = () => {
 
   return (
     <Layout>
-      {/* Hero section */}
       <div className="bg-gradient-to-br from-mediwrap-blue/10 to-mediwrap-green/10 dark:from-mediwrap-blue/5 dark:to-mediwrap-green/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="text-center">
@@ -97,7 +107,6 @@ const Consultation = () => {
         </div>
       </div>
       
-      {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs defaultValue="all" className="mb-8">
           <TabsList>
@@ -163,11 +172,13 @@ const Consultation = () => {
                           </div>
                           <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Next Available</p>
-                            <p className="font-medium text-green-600 dark:text-green-400">{doctor.nextAvailable}</p>
+                            <p className="font-medium text-green-600 dark:text-green-400">
+                              {doctor.next_available ? new Date(doctor.next_available).toLocaleString() : 'Not available'}
+                            </p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Consultation Fee</p>
-                            <p className="font-medium">{doctor.fee}</p>
+                            <p className="font-medium">${doctor.fee}</p>
                           </div>
                         </div>
                         

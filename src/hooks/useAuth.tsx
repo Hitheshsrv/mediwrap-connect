@@ -1,10 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthError, User } from '@supabase/supabase-js';
 
 // Define user interface
-export interface User {
-  id: number;
+export interface UserData {
+  id: string;
   email: string;
   name: string;
   role: 'patient' | 'doctor' | 'admin';
@@ -12,45 +14,103 @@ export interface User {
 
 // Auth context interface
 interface AuthContextType {
-  user: User | null;
+  user: UserData | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (userData: Partial<User> & { password: string }) => Promise<void>;
-  logout: () => void;
+  signup: (userData: { email: string, password: string, name: string, role?: 'patient' | 'doctor' | 'admin' }) => Promise<void>;
+  logout: () => Promise<void>;
   error: string | null;
 }
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
-const mockUsers: (User & { password: string })[] = [
-  { id: 1, email: 'patient@example.com', password: 'password', name: 'John Doe', role: 'patient' },
-  { id: 2, email: 'doctor@example.com', password: 'password', name: 'Dr. Sarah Johnson', role: 'doctor' },
-  { id: 3, email: 'admin@example.com', password: 'password', name: 'Admin User', role: 'admin' },
-];
-
 // Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
-  // Check if user is already logged in (from localStorage)
+  // Initialize auth state
   useEffect(() => {
-    const storedUser = localStorage.getItem('mediwrap-user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Failed to parse stored user data');
-        localStorage.removeItem('mediwrap-user');
+    const initAuth = async () => {
+      setIsLoading(true);
+      
+      // Set up auth state listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (session && session.user) {
+            try {
+              // Fetch user profile
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+              
+              // Create user data object
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: profile?.name || session.user.email?.split('@')[0] || '',
+                role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
+              });
+            } catch (err) {
+              console.error('Error fetching user profile:', err);
+              // If profile fetch fails, use basic user data
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.email?.split('@')[0] || '',
+                role: 'patient'
+              });
+            }
+          } else {
+            setUser(null);
+          }
+          setIsLoading(false);
+        }
+      );
+      
+      // Check for existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        try {
+          // Fetch user profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          // Create user data object
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: profile?.name || session.user.email?.split('@')[0] || '',
+            role: (profile?.role as 'patient' | 'doctor' | 'admin') || 'patient'
+          });
+        } catch (err) {
+          console.error('Error fetching user profile:', err);
+          // If profile fetch fails, use basic user data
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.email?.split('@')[0] || '',
+            role: 'patient'
+          });
+        }
       }
-    }
-    setIsLoading(false);
+      
+      setIsLoading(false);
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+    
+    initAuth();
   }, []);
 
   // Login function
@@ -59,34 +119,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Find user in mock data
-      const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-      
-      if (!foundUser) {
-        throw new Error('Invalid email or password');
+      if (error) {
+        throw error;
       }
-      
-      // Create user object without password
-      const { password: _, ...userWithoutPassword } = foundUser;
-      
-      // Set user in state
-      setUser(userWithoutPassword);
-      
-      // Save to localStorage
-      localStorage.setItem('mediwrap-user', JSON.stringify(userWithoutPassword));
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${userWithoutPassword.name}!`,
+        description: `Welcome back!`,
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred during login');
+      let errorMessage = 'An error occurred during login';
+      if (error instanceof AuthError) {
+        errorMessage = error.message;
+      }
+      setError(errorMessage);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : 'An error occurred during login',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -95,51 +149,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   // Signup function
-  const signup = async (userData: Partial<User> & { password: string }) => {
+  const signup = async ({ email, password, name, role = 'patient' }: { email: string, password: string, name: string, role?: 'patient' | 'doctor' | 'admin' }) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Register the user
+      const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role
+          }
+        }
+      });
       
-      // Check if user already exists
-      const existingUser = mockUsers.find(u => u.email === userData.email);
-      if (existingUser) {
-        throw new Error('User with this email already exists');
+      if (signUpError) {
+        throw signUpError;
       }
       
-      // Create new user (in a real app, this would be handled by the backend)
-      const newUserId = mockUsers.length + 1;
-      const newUser: User & { password: string } = {
-        id: newUserId,
-        email: userData.email || '',
-        password: userData.password,
-        name: userData.name || '',
-        role: userData.role || 'patient',
-      };
+      if (!newUser) {
+        throw new Error('Failed to create user account');
+      }
       
-      // Add to mock users (in a real app, this would be saved in the database)
-      mockUsers.push(newUser);
+      // Create user profile
+      const { error: profileError } = await supabase.from('profiles').insert([
+        {
+          id: newUser.id,
+          name,
+          role
+        }
+      ]);
       
-      // Create user object without password
-      const { password: _, ...userWithoutPassword } = newUser;
-      
-      // Set user in state
-      setUser(userWithoutPassword);
-      
-      // Save to localStorage
-      localStorage.setItem('mediwrap-user', JSON.stringify(userWithoutPassword));
+      if (profileError) {
+        throw profileError;
+      }
       
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully!",
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred during signup');
+      let errorMessage = 'An error occurred during signup';
+      if (error instanceof AuthError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      setError(errorMessage);
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : 'An error occurred during signup',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -148,13 +210,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Logout function
-  const logout = () => {
-    localStorage.removeItem('mediwrap-user');
-    setUser(null);
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
-    });
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred during logout.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

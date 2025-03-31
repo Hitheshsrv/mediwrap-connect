@@ -9,7 +9,158 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          created_at: string | null
+          date: string
+          doctor_id: string
+          id: string
+          patient_id: string
+          status: string
+          time: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          doctor_id: string
+          id?: string
+          patient_id: string
+          status: string
+          time: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          doctor_id?: string
+          id?: string
+          patient_id?: string
+          status?: string
+          time?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctors: {
+        Row: {
+          available: boolean | null
+          created_at: string | null
+          education: string | null
+          experience: string | null
+          fee: number | null
+          hospital: string | null
+          id: string
+          image: string | null
+          location: string | null
+          name: string
+          next_available: string | null
+          online: boolean | null
+          rating: number | null
+          reviews: number | null
+          specialty: string
+          user_id: string | null
+        }
+        Insert: {
+          available?: boolean | null
+          created_at?: string | null
+          education?: string | null
+          experience?: string | null
+          fee?: number | null
+          hospital?: string | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name: string
+          next_available?: string | null
+          online?: boolean | null
+          rating?: number | null
+          reviews?: number | null
+          specialty: string
+          user_id?: string | null
+        }
+        Update: {
+          available?: boolean | null
+          created_at?: string | null
+          education?: string | null
+          experience?: string | null
+          fee?: number | null
+          hospital?: string | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          name?: string
+          next_available?: string | null
+          online?: boolean | null
+          rating?: number | null
+          reviews?: number | null
+          specialty?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image: string | null
+          name: string
+          price: number
+          stock: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          name: string
+          price: number
+          stock?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+          price?: number
+          stock?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          name?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

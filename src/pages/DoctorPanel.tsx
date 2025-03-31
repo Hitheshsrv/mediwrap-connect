@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import apiClient, { Appointment, Doctor } from "@/services/api";
 import { 
   Calendar, 
@@ -20,14 +20,13 @@ import {
   Video,
   Calendar as CalendarIcon
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const DoctorPanel = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctorInfo, setDoctorInfo] = useState<Doctor | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if not authenticated or not a doctor
   useEffect(() => {
@@ -46,53 +45,80 @@ const DoctorPanel = () => {
     }
   }, [isAuthenticated, user, navigate, toast]);
 
-  // Fetch doctor appointments
-  useEffect(() => {
-    const fetchData = async () => {
-      if (user && user.role === 'doctor') {
-        setIsLoading(true);
-        try {
-          // In a real app, this would fetch appointments for the logged-in doctor
-          // For demo, we're using ID 2 as example
-          const doctorId = 2; // Would be user.id in a real app
-          const appointmentsData = await apiClient.getDoctorAppointments(doctorId);
-          setAppointments(appointmentsData);
+  // Get doctor information
+  const getDoctorId = async () => {
+    if (user) {
+      try {
+        const { data, error } = await supabase
+          .from('doctors')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
           
-          // Fetch doctor info
-          const doctor = await apiClient.getDoctor(doctorId);
-          if (doctor) {
-            setDoctorInfo(doctor);
-          }
-        } catch (error) {
-          console.error("Failed to fetch appointments:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch appointments",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
+        if (error) {
+          console.error('Error fetching doctor:', error);
+          return null;
         }
+        
+        if (data) {
+          setDoctorInfo(data as Doctor);
+          return data.id;
+        }
+        
+        return null;
+      } catch (error) {
+        console.error('Error fetching doctor ID:', error);
+        return null;
       }
-    };
+    }
+    return null;
+  };
 
-    fetchData();
-  }, [user, toast]);
+  // Fetch doctor appointments
+  const { 
+    data: appointments = [], 
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey: ['doctorAppointments', user?.id],
+    queryFn: async () => {
+      const doctorId = await getDoctorId();
+      if (!doctorId) return [];
+      return apiClient.getDoctorAppointments(doctorId);
+    },
+    enabled: !!user && user.role === 'doctor',
+  });
+
+  // Listen for real-time changes to appointments
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:appointments')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'appointments' 
+      }, () => {
+        refetch();
+      })
+      .subscribe();
+      
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [refetch]);
 
   // Update appointment status
-  const updateAppointmentStatus = async (id: number, status: "confirmed" | "pending" | "canceled") => {
+  const updateAppointmentStatus = async (id: string, status: "confirmed" | "pending" | "canceled") => {
     try {
       await apiClient.updateAppointmentStatus(id, status);
-      
-      // Update local state
-      setAppointments(prev => 
-        prev.map(app => app.id === id ? { ...app, status } : app)
-      );
       
       toast({
         title: "Status updated",
         description: `Appointment status changed to ${status}`,
       });
+      
+      // Refetch data to get updated appointments
+      refetch();
     } catch (error) {
       console.error("Failed to update appointment status:", error);
       toast({
@@ -148,7 +174,7 @@ const DoctorPanel = () => {
                 <p className="font-medium">{doctorInfo.hospital}</p>
                 <p className="text-sm text-gray-500">{doctorInfo.location}</p>
                 <Badge variant={doctorInfo.available ? "default" : "outline"}>
-                  {doctorInfo.available ? "Available Now" : `Next: ${doctorInfo.nextAvailable}`}
+                  {doctorInfo.available ? "Available Now" : `Next: ${new Date(doctorInfo.next_available).toLocaleString()}`}
                 </Badge>
               </div>
             </CardContent>
@@ -191,7 +217,7 @@ const DoctorPanel = () => {
                       {getPendingAppointments().map((appointment) => (
                         <TableRow key={appointment.id}>
                           <TableCell>
-                            <div className="font-medium">Patient #{appointment.patientId}</div>
+                            <div className="font-medium">Patient #{appointment.patient_id}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
@@ -261,7 +287,7 @@ const DoctorPanel = () => {
                       {getConfirmedAppointments().map((appointment) => (
                         <TableRow key={appointment.id}>
                           <TableCell>
-                            <div className="font-medium">Patient #{appointment.patientId}</div>
+                            <div className="font-medium">Patient #{appointment.patient_id}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
@@ -329,7 +355,7 @@ const DoctorPanel = () => {
                       {getCanceledAppointments().map((appointment) => (
                         <TableRow key={appointment.id} className="text-gray-500">
                           <TableCell>
-                            <div className="font-medium">Patient #{appointment.patientId}</div>
+                            <div className="font-medium">Patient #{appointment.patient_id}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
@@ -382,7 +408,7 @@ const DoctorPanel = () => {
                       {appointments.map((appointment) => (
                         <TableRow key={appointment.id}>
                           <TableCell>
-                            <div className="font-medium">Patient #{appointment.patientId}</div>
+                            <div className="font-medium">Patient #{appointment.patient_id}</div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
