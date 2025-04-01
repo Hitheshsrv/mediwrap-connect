@@ -278,7 +278,7 @@ const Pharmacy = () => {
                   </div>
                   <h3 className="font-medium text-lg mb-1">{product.name}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.description}</p>
-                  <p className="text-lg font-bold text-mediwrap-blue dark:text-mediwrap-blue-light">${product.price.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-mediwrap-blue dark:text-mediwrap-blue-light">₹{product.price.toFixed(2)}</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                   <Button 
@@ -326,7 +326,7 @@ const Pharmacy = () => {
                         />
                         <div className="ml-4 flex-grow">
                           <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-gray-600 dark:text-gray-400">${item.price.toFixed(2)}</p>
+                          <p className="text-gray-600 dark:text-gray-400">₹{item.price.toFixed(2)}</p>
                         </div>
                         <div className="flex items-center">
                           <Button 
@@ -353,11 +353,11 @@ const Pharmacy = () => {
                     <div className="mt-6 py-4 border-t border-gray-200 dark:border-gray-800">
                       <div className="flex justify-between mb-4">
                         <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                        <span className="font-medium">${subtotal.toFixed(2)}</span>
+                        <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mb-4">
                         <span className="text-gray-600 dark:text-gray-400">Delivery:</span>
-                        <span className="font-medium">$5.00</span>
+                        <span className="font-medium">₹5.00</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total:</span>
