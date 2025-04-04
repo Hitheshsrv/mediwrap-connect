@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Appointment, toast } from "./types";
 
@@ -51,14 +50,12 @@ export class AppointmentService {
   }
 
   // Update appointment status
-  async updateAppointmentStatus(id: string, status: "confirmed" | "pending" | "canceled"): Promise<Appointment | null> {
+  async updateAppointmentStatus(id: string, status: "confirmed" | "pending" | "canceled"): Promise<boolean> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('appointments')
         .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
       
       if (error) {
         console.error('Error updating appointment status:', error);
@@ -67,13 +64,18 @@ export class AppointmentService {
           description: "Failed to update appointment status",
           variant: "destructive",
         });
-        return null;
+        return false;
       }
       
-      return data as Appointment;
+      toast({
+        title: "Success",
+        description: `Appointment ${status === 'canceled' ? 'canceled' : 'updated'} successfully`,
+      });
+      
+      return true;
     } catch (error) {
       console.error('Error in updateAppointmentStatus:', error);
-      return null;
+      return false;
     }
   }
 

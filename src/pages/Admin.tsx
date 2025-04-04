@@ -562,7 +562,7 @@ const Admin = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          name: selectedUser.name,
+          full_name: selectedUser.name,
           role: selectedUser.role,
           // Don't update email as it's managed by Auth
         })
@@ -868,10 +868,6 @@ const Admin = () => {
                   </Dialog>
                   <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-mediwrap-blue hover:bg-mediwrap-blue-light flex items-center gap-2">
-                        <PencilIcon className="h-4 w-4" />
-                        <span>Edit User</span>
-                      </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
@@ -1161,12 +1157,6 @@ const Admin = () => {
                     </DialogContent>
                   </Dialog>
                   <Dialog open={isEditDoctorDialogOpen} onOpenChange={setIsEditDoctorDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-mediwrap-blue hover:bg-mediwrap-blue-light flex items-center gap-2">
-                        <PencilIcon className="h-4 w-4" />
-                        <span>Edit Doctor</span>
-                      </Button>
-                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Edit Doctor</DialogTitle>
@@ -1322,7 +1312,7 @@ const Admin = () => {
                   </div>
                 ) : doctorsError ? (
                   <div className="flex justify-center items-center p-12 text-red-500">
-                    <p>Error loading doctors. Please try again.</p>
+                    Error loading doctors. Please try again.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -1347,7 +1337,7 @@ const Admin = () => {
                               <TableCell>{doctor.specialty}</TableCell>
                               <TableCell>{doctor.hospital || "N/A"}</TableCell>
                               <TableCell>{doctor.location || "N/A"}</TableCell>
-                              <TableCell>${doctor.fee}</TableCell>
+                              <TableCell>₹{doctor.fee}</TableCell>
                               <TableCell>{doctor.rating} ({doctor.reviews})</TableCell>
                               <TableCell>
                                 <Badge variant={doctor.available ? "default" : "destructive"}>

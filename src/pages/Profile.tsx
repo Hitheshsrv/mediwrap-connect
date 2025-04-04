@@ -1,5 +1,4 @@
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +11,13 @@ import apiClient from "@/services/api";
 import { CalendarDays, Clock, User, MapPin, Phone, Mail, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // If not authenticated, redirect to login
   useEffect(() => {
@@ -23,6 +25,33 @@ const Profile = () => {
       navigate("/login");
     }
   }, [isAuthenticated, navigate]);
+
+  // Fetch user profile data
+  const fetchProfileData = async () => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) throw error;
+      setProfileData(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      return null;
+    }
+  };
+
+  // Fetch profile data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user]);
 
   // Fetch user appointments
   const { 
@@ -63,6 +92,9 @@ const Profile = () => {
     return null; // Don't render anything if not authenticated
   }
 
+  // Use profile data if available, otherwise fall back to user data
+  const displayData = profileData || user;
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -83,31 +115,34 @@ const Profile = () => {
               </CardHeader>
               <CardContent className="flex flex-col items-center">
                 <Avatar className="w-32 h-32">
-                  <AvatarImage src={`https://avatar.vercel.sh/${user.email}?size=128`} alt={user.name} />
+                  <AvatarImage src={`https://avatar.vercel.sh/${displayData.email}?size=128`} alt={displayData.name} />
                   <AvatarFallback>
                     <UserCircle className="w-32 h-32 text-gray-400" />
                   </AvatarFallback>
                 </Avatar>
                 
-                <h2 className="text-2xl font-bold mt-4">{user.name}</h2>
-                <Badge className="mt-2 capitalize">{user.role}</Badge>
+                <h2 className="text-2xl font-bold mt-4">{displayData.name}</h2>
+                <Badge className="mt-2 capitalize">{displayData.role}</Badge>
                 
                 <div className="w-full mt-8 space-y-4">
                   <div className="flex items-center">
                     <Mail className="w-5 h-5 mr-2 text-gray-500" />
-                    <span>{user.email}</span>
+                    <span>{displayData.email}</span>
                   </div>
                   <div className="flex items-center">
                     <Phone className="w-5 h-5 mr-2 text-gray-500" />
-                    <span>+1 (555) 123-4567</span>
+                    <span>{displayData.phone || "+1 (555) 123-4567"}</span>
                   </div>
                   <div className="flex items-center">
                     <MapPin className="w-5 h-5 mr-2 text-gray-500" />
-                    <span>New York, USA</span>
+                    <span>{displayData.address || "New York, USA"}</span>
                   </div>
                 </div>
                 
-                <Button className="w-full mt-8 bg-mediwrap-blue hover:bg-mediwrap-blue-light">
+                <Button 
+                  className="w-full mt-8 bg-mediwrap-blue hover:bg-mediwrap-blue-light"
+                  onClick={() => setIsEditProfileOpen(true)}
+                >
                   Edit Profile
                 </Button>
               </CardContent>
@@ -175,7 +210,28 @@ const Profile = () => {
                                 variant="outline" 
                                 size="sm" 
                                 className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => apiClient.updateAppointmentStatus(appointment.id, "canceled")}
+                                onClick={async (event) => {
+                                  // Disable button during cancellation
+                                  const target = event.target as HTMLButtonElement;
+                                  const originalText = target.innerText;
+                                  target.disabled = true;
+                                  target.innerText = "Cancelling...";
+                                  
+                                  // Call API to cancel appointment
+                                  const success = await apiClient.updateAppointmentStatus(
+                                    appointment.id, 
+                                    "canceled"
+                                  );
+                                  
+                                  // If successful, refetch appointments to update UI
+                                  if (success) {
+                                    refetch();
+                                  }
+                                  
+                                  // Re-enable button
+                                  target.disabled = false;
+                                  target.innerText = originalText;
+                                }}
                               >
                                 Cancel
                               </Button>
@@ -216,6 +272,14 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        user={displayData}
+        onProfileUpdated={fetchProfileData}
+      />
     </Layout>
   );
 };

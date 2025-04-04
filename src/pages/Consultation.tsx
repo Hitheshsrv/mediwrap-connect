@@ -146,16 +146,30 @@ const Consultation = () => {
                     <div className="flex flex-col md:flex-row">
                       <div className="md:w-1/4 p-6 flex flex-col items-center justify-center border-r border-gray-200 dark:border-gray-800">
                         <div className="relative">
-                          <img
-                            src={doctor.image}
-                            alt={doctor.name}
-                            className="w-32 h-32 rounded-full object-cover border-2 border-mediwrap-blue/30"
-                          />
+                          {doctor.image ? (
+                            <img
+                              src={doctor.image}
+                              alt={doctor.name}
+                              className="w-32 h-32 rounded-full object-cover border-2 border-mediwrap-blue/30 shadow-md"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`${doctor.image ? 'hidden' : ''} w-32 h-32 rounded-full border-2 border-mediwrap-blue/30 bg-gradient-to-br from-mediwrap-blue/20 to-mediwrap-blue/40 flex flex-col items-center justify-center shadow-md`}
+                          >
+                            <span className="text-xs font-medium text-mediwrap-blue/70 mb-1">Dr.</span>
+                            <span className="text-2xl font-bold text-mediwrap-blue">
+                              {doctor.name.split(' ').map(name => name[0]).join('')}
+                            </span>
+                          </div>
                           {doctor.available && (
                             <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
                           )}
                         </div>
-                        <h3 className="mt-4 text-xl font-semibold text-center">{doctor.name}</h3>
+                        <h3 className="mt-4 text-xl font-semibold text-center">Dr. {doctor.name}</h3>
                         <p className="text-gray-600 dark:text-gray-400 text-center">{doctor.specialty}</p>
                         <div className="flex items-center mt-2">
                           <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
