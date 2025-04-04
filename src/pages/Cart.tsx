@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Trash2, PlusCircle, MinusCircle, CreditCard, Truck } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 
@@ -68,7 +67,7 @@ const Cart = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between border-b pb-4">
+                    <div key={`cart-item-${item.id}`} className="flex items-center justify-between border-b pb-4">
                       <div className="flex items-center">
                         <img 
                           src={item.image} 
@@ -87,7 +86,13 @@ const Cart = () => {
                             variant="outline" 
                             size="icon" 
                             className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => {
+                              if (item.quantity > 1) {
+                                updateQuantity(item.id, item.quantity - 1);
+                              } else {
+                                removeFromCart(item.id);
+                              }
+                            }}
                           >
                             <MinusCircle className="h-4 w-4" />
                           </Button>
@@ -102,18 +107,17 @@ const Cart = () => {
                           </Button>
                         </div>
                         
-                        <div className="font-semibold w-20 text-right">
-                        ₹{(item.price * item.quantity).toFixed(2)}
+                        <div className="flex flex-col items-end">
+                          <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeFromCart(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
