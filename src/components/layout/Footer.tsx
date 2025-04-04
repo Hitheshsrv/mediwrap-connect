@@ -82,7 +82,7 @@ const Footer = () => {
             <ul className="mt-4 space-y-4">
               <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Phone className="h-4 w-4 mr-2 text-mediwrap-blue dark:text-mediwrap-blue-light" />
-                +1 (555) 123-4567
+                +91 98765 41230
               </li>
               <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Mail className="h-4 w-4 mr-2 text-mediwrap-blue dark:text-mediwrap-blue-light" />
@@ -93,7 +93,7 @@ const Footer = () => {
                 <br />
                 Medical District, MD 12345
                 <br />
-                United States
+                India
               </li>
             </ul>
           </div>
