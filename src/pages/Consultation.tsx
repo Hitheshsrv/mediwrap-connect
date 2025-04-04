@@ -178,7 +178,7 @@ const Consultation = () => {
                           </div>
                           <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Consultation Fee</p>
-                            <p className="font-medium">${doctor.fee}</p>
+                            <p className="font-medium">₹{doctor.fee}</p>
                           </div>
                         </div>
                         

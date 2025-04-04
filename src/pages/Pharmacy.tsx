@@ -1,145 +1,62 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart, Upload, Star, Plus, Minus } from "lucide-react";
+import { Search, ShoppingCart, Upload, Star, Plus, Minus, Loader2, ImageIcon } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
 import PrescriptionUpload from "@/components/pharmacy/PrescriptionUpload";
+import { ProductService } from "@/services/api/product-service";
+import { Product } from "@/services/api/types";
+import { useQuery } from "@tanstack/react-query";
 
-// Mock data for products
-const products = [
-  {
-    id: 1,
-    name: "Paracetamol 500mg",
-    category: "Pain Relief",
-    price: 5.99,
-    rating: 4.8,
-    reviews: 124,
-    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Relieves mild to moderate pain and reduces fever",
-    prescription: false
-  },
-  {
-    id: 2,
-    name: "Amoxicillin 250mg",
-    category: "Antibiotics",
-    price: 12.50,
-    rating: 4.5,
-    reviews: 89,
-    image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Treats bacterial infections",
-    prescription: true
-  },
-  {
-    id: 3,
-    name: "Digital Thermometer",
-    category: "Medical Devices",
-    price: 15.99,
-    rating: 4.7,
-    reviews: 203,
-    image: "https://images.unsplash.com/photo-1588776814546-daab30f310ce?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Accurate digital thermometer for temperature readings",
-    prescription: false
-  },
-  {
-    id: 4,
-    name: "Vitamin D 1000 IU",
-    category: "Vitamins & Supplements",
-    price: 9.99,
-    rating: 4.9,
-    reviews: 156,
-    image: "https://images.unsplash.com/photo-1577969177570-0f77a7c879c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Supports bone health and immune function",
-    prescription: false
-  },
-  {
-    id: 5,
-    name: "Blood Pressure Monitor",
-    category: "Medical Devices",
-    price: 45.99,
-    rating: 4.6,
-    reviews: 78,
-    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Home blood pressure monitor for daily readings",
-    prescription: false
-  },
-  {
-    id: 6,
-    name: "Insulin 100 IU/ml",
-    category: "Diabetes Care",
-    price: 65.00,
-    rating: 4.9,
-    reviews: 112,
-    image: "https://images.unsplash.com/photo-1631549916768-4119b2e5f926?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "For treatment of diabetes mellitus",
-    prescription: true
-  },
-  {
-    id: 7,
-    name: "First Aid Kit",
-    category: "Medical Supplies",
-    price: 24.99,
-    rating: 4.8,
-    reviews: 245,
-    image: "https://images.unsplash.com/photo-1603398938378-e54eab446dde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Complete kit for emergency first aid",
-    prescription: false
-  },
-  {
-    id: 8,
-    name: "Face Masks (Pack of 50)",
-    category: "Personal Protection",
-    price: 18.99,
-    rating: 4.7,
-    reviews: 320,
-    image: "https://images.unsplash.com/photo-1605845328642-7d277d6cfea3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
-    description: "Disposable face masks for daily protection",
-    prescription: false
-  }
-];
+const productService = new ProductService();
 
 const Pharmacy = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [showCart, setShowCart] = useState(false);
-  const [searchResults, setSearchResults] = useState(products);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, subtotal } = useCart();
 
-  // Update search results whenever search term or filter type changes
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      // If search term is empty, just apply the filter
-      const filtered = filterProducts(products, filterType);
-      setSearchResults(filtered);
-    } else {
-      // Apply both search term and filter
-      const filtered = filterProducts(products, filterType).filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setSearchResults(filtered);
+  const { data: products = [], isLoading, isError } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      return await productService.getProducts();
     }
-  }, [searchTerm, filterType]);
+  });
 
-  // Filter products based on filter type
-  const filterProducts = (productsToFilter, filter) => {
-    if (filter === "all") return productsToFilter;
-    if (filter === "otc") return productsToFilter.filter(product => !product.prescription);
-    if (filter === "prescription") return productsToFilter.filter(product => product.prescription);
-    return productsToFilter;
-  };
+  // Memoize the filter function to prevent recreation on each render
+  const filterProducts = useCallback((productList: Product[], type: string) => {
+    if (type === "all") return productList;
+    if (type === "prescription") return productList.filter(p => p.prescription);
+    return productList.filter(p => !p.prescription);
+  }, []);
 
-  const handleAddToCart = (product) => {
+  // Memoize the filtered results based on products, searchTerm, and filterType
+  const searchResults = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    
+    const filtered = filterProducts(products, filterType);
+    
+    if (!searchTerm.trim()) {
+      return filtered;
+    }
+    
+    return filtered.filter(product => 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [products, searchTerm, filterType, filterProducts]);
+
+  const handleAddToCart = (product: Product) => {
     addToCart({
-      id: product.id,
+      id: Number(product.id), // Convert string ID to number
       name: product.name,
       price: product.price,
       quantity: 1,
@@ -147,16 +64,16 @@ const Pharmacy = () => {
     });
     
     toast({
-      title: "Added to cart",
+      title: "Added to Cart",
       description: `${product.name} has been added to your cart.`,
     });
   };
 
-  const handleRemoveFromCart = (productId) => {
+  const handleRemoveFromCart = (productId: number) => {
     removeFromCart(productId);
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // The search is already handled by the useEffect
     // This is just to handle the form submission
@@ -170,6 +87,26 @@ const Pharmacy = () => {
   const calculateTotal = () => {
     return subtotal + 5; // Add $5 for shipping
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-screen">
+          <Loader2 className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-screen">
+          <p className="text-gray-600 dark:text-gray-400">Error loading products</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -256,12 +193,43 @@ const Pharmacy = () => {
           {searchResults.length > 0 ? (
             searchResults.map((product) => (
               <Card key={product.id} className="overflow-hidden flex flex-col h-full">
-                <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  {!product.image ? (
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <ImageIcon className="h-10 w-10 mb-2" />
+                      <span className="text-sm">No image available</span>
+                    </div>
+                  ) : (
+                    <img 
+                      src={product.image} 
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null; // Prevent infinite loop
+                        
+                        // Replace the img element with a placeholder div
+                        const parent = target.parentElement;
+                        if (parent) {
+                          // Create placeholder content
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'flex flex-col items-center justify-center h-full w-full text-gray-400';
+                          placeholder.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                              <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
+                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                              <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <span class="text-sm">Image unavailable</span>
+                          `;
+                          
+                          // Replace the img with the placeholder
+                          parent.innerHTML = '';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                    />
+                  )}
                   {product.prescription && (
                     <div className="absolute top-2 left-2 bg-mediwrap-blue text-white text-xs px-2 py-1 rounded">
                       Prescription Required

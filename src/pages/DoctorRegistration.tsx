@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DoctorService } from "@/services/api/doctor-service";
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -93,22 +94,46 @@ const DoctorRegistration = () => {
     setIsSubmitting(true);
     
     try {
-      // Log form data - in a real app, this would be sent to the backend
       console.log("Form submitted:", values);
       
-      // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create a new instance of DoctorService
+      const doctorService = new DoctorService();
       
-      // Show success message
-      toast({
-        title: "Registration successful",
-        description: "Your application has been submitted for review. We will contact you soon.",
-      });
+      // Map form values to doctor schema
+      const doctorData = {
+        name: `${values.firstName} ${values.lastName}`,
+        specialty: values.specialty,
+        hospital: "", // Can be updated later
+        location: `${values.city}, ${values.state}, ${values.country}`,
+        education: values.qualification,
+        experience: values.experience,
+        fee: 0, // Default value, can be updated later
+        available: true,
+        online: values.consultationType === "online" || values.consultationType === "both",
+        image: "", // Can be updated later
+        next_available: new Date().toISOString().split('T')[0], // Today's date as default
+        user_id: null, // Will be linked to user account later
+        rating: 4.5, // Default rating
+        reviews: 0, // Default number of reviews
+      };
       
-      // Redirect to home page
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
+      // Save doctor to database
+      const result = await doctorService.addDoctor(doctorData);
+      
+      if (result) {
+        // Show success message
+        toast({
+          title: "Registration successful",
+          description: "Your application has been submitted for review. We will contact you soon.",
+        });
+        
+        // Redirect to home page
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else {
+        throw new Error("Failed to save doctor data");
+      }
     } catch (error) {
       console.error("Registration error:", error);
       toast({

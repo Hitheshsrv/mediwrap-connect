@@ -52,7 +52,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .then(({ data: profile, error }) => {
                   if (error) {
                     console.error('Error fetching user profile:', error);
-                    // If profile fetch fails, use basic user data
+                    
+                    // If profile doesn't exist, create one
+                    if (error.code === 'PGRST116') {
+                      console.log('Profile not found in auth state change, creating one...');
+                      const userName = session.user.email?.split('@')[0] || '';
+                      
+                      // Create a profile for the user
+                      supabase.from('profiles').insert([
+                        {
+                          id: session.user.id,
+                          email: session.user.email,
+                          name: userName,
+                          role: 'patient'
+                        }
+                      ]).then(({ error: insertError }) => {
+                        if (insertError) {
+                          console.error('Error creating profile:', insertError);
+                        } else {
+                          console.log('Profile created successfully in auth state change');
+                        }
+                      });
+                    }
+                    
+                    // Use basic user data
                     setUser({
                       id: session.user.id,
                       email: session.user.email || '',
@@ -101,7 +124,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (error) {
             console.error('Error fetching user profile:', error);
-            // If profile fetch fails, use basic user data
+            
+            // If profile doesn't exist, create one
+            if (error.code === 'PGRST116') {
+              console.log('Profile not found, creating one...');
+              const userName = session.user.email?.split('@')[0] || '';
+              
+              // Create a profile for the user
+              supabase.from('profiles').insert([
+                {
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: userName,
+                  role: 'patient'
+                }
+              ]).then(({ error: insertError }) => {
+                if (insertError) {
+                  console.error('Error creating profile:', insertError);
+                } else {
+                  console.log('Profile created successfully');
+                }
+              });
+            }
+            
+            // Use basic user data
             setUser({
               id: session.user.id,
               email: session.user.email || '',

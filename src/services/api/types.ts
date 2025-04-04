@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 export interface Doctor {
@@ -37,6 +36,9 @@ export interface Product {
   description: string;
   image: string;
   stock: number;
+  rating?: number;
+  reviews?: number;
+  prescription?: boolean;
 }
 
 export interface CartItem {
