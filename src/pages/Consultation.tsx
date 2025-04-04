@@ -142,9 +142,9 @@ const Consultation = () => {
                 </div>
               ) : filteredDoctors.length > 0 ? (
                 filteredDoctors.map((doctor) => (
-                  <Card key={doctor.id} className="overflow-hidden">
+                  <Card key={doctor.id} className="overflow-hidden shadow-lg border-0 bg-gradient-to-r from-white to-blue-50 dark:from-gray-900 dark:to-gray-800">
                     <div className="flex flex-col md:flex-row">
-                      <div className="md:w-1/4 p-6 flex flex-col items-center justify-center border-r border-gray-200 dark:border-gray-800">
+                      <div className="md:w-1/4 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-mediwrap-blue/5 to-mediwrap-blue/10 border-r border-gray-200 dark:border-gray-700 rounded-l">
                         <div className="relative">
                           {doctor.image ? (
                             <img
@@ -166,77 +166,78 @@ const Consultation = () => {
                             </span>
                           </div>
                           {doctor.available && (
-                            <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                            <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full shadow-sm"></span>
                           )}
                         </div>
-                        <h3 className="mt-4 text-xl font-semibold text-center">Dr. {doctor.name}</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-center">{doctor.specialty}</p>
-                        <div className="flex items-center mt-2">
+                        <h3 className="mt-4 text-xl font-semibold text-center text-gray-800 dark:text-gray-100">Dr. {doctor.name}</h3>
+                        <p className="text-mediwrap-blue font-medium text-center">{doctor.specialty}</p>
+                        <div className="flex items-center mt-2 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full">
                           <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                          <span className="ml-1 text-gray-700 dark:text-gray-300">{doctor.rating}</span>
-                          <span className="ml-1 text-gray-500">({doctor.reviews} reviews)</span>
+                          <span className="ml-1 text-gray-700 dark:text-gray-300 font-medium">{doctor.rating}</span>
+                          <span className="ml-1 text-gray-500 text-sm">({doctor.reviews} reviews)</span>
                         </div>
                       </div>
                       
-                      <div className="md:w-3/4 p-6">
+                      <div className="md:w-3/4 p-6 bg-white dark:bg-gray-900 rounded-r">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                          <div>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                             <p className="text-sm text-gray-500 dark:text-gray-400">Hospital</p>
-                            <p className="font-medium">{doctor.hospital}</p>
+                            <p className="font-medium text-gray-800 dark:text-gray-200">{doctor.hospital}</p>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Next Available</p>
-                            <p className="font-medium text-green-600 dark:text-green-400">
-                              {doctor.next_available ? new Date(doctor.next_available).toLocaleString() : 'Not available'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Consultation Fee</p>
-                            <p className="font-medium">₹{doctor.fee}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                          <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Education</p>
-                            <p className="font-medium">{doctor.education}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Experience</p>
-                            <p className="font-medium">{doctor.experience}</p>
-                          </div>
-                          <div>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                             <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
-                            <p className="font-medium">{doctor.location}</p>
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 text-mediwrap-blue mr-1" />
+                              <p className="font-medium text-gray-800 dark:text-gray-200">{doctor.location}</p>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Next Available</p>
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 text-mediwrap-blue mr-1" />
+                              <p className="font-medium text-gray-800 dark:text-gray-200">{doctor.next_available}</p>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4">
-                          {doctor.online && (
-                            <Button
-                              variant="outline"
-                              className="flex items-center border-mediwrap-blue text-mediwrap-blue hover:bg-mediwrap-blue/10"
+                        <div className="mb-6">
+                          <h4 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">About</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Education</p>
+                              <p className="font-medium text-gray-800 dark:text-gray-200">{doctor.education}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Experience</p>
+                              <p className="font-medium text-gray-800 dark:text-gray-200">{doctor.experience}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                          <div className="flex items-center">
+                            <p className="text-lg font-bold text-mediwrap-blue mr-2">₹{doctor.fee}</p>
+                            <span className="text-sm text-gray-500">per consultation</span>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button 
+                              className="bg-mediwrap-blue hover:bg-mediwrap-blue-light flex items-center gap-2"
                               onClick={() => handleBookAppointment(doctor.id, doctor.name, "video")}
                             >
-                              <Video className="mr-2 h-4 w-4" />
-                              Book Video Consultation
+                              <Video className="h-4 w-4" />
+                              <span>Video Consultation</span>
                             </Button>
-                          )}
-                          <Button
-                            variant={doctor.online ? "outline" : "default"}
-                            className={doctor.online ? "flex items-center border-mediwrap-green text-mediwrap-green hover:bg-mediwrap-green/10" : "flex items-center bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"}
-                            onClick={() => handleBookAppointment(doctor.id, doctor.name, "in-person")}
-                          >
-                            <MapPin className="mr-2 h-4 w-4" />
-                            Book In-Person Visit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="flex items-center"
-                          >
-                            <Calendar className="mr-2 h-4 w-4" />
-                            View Schedule
-                          </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              className="border-mediwrap-blue text-mediwrap-blue hover:bg-mediwrap-blue/10 flex items-center gap-2"
+                              onClick={() => handleBookAppointment(doctor.id, doctor.name, "in-person")}
+                            >
+                              <Users className="h-4 w-4" />
+                              <span>In-Person Visit</span>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

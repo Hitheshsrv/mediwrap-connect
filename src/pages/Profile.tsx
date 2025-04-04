@@ -18,6 +18,7 @@ const Profile = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  const [doctorsMap, setDoctorsMap] = useState<Record<string, any>>({});
 
   // If not authenticated, redirect to login
   useEffect(() => {
@@ -66,6 +67,33 @@ const Profile = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch doctor details for all appointments
+  useEffect(() => {
+    const fetchDoctorDetails = async () => {
+      if (!appointments.length) return;
+      
+      // Get unique doctor IDs
+      const doctorIds = [...new Set(appointments.map(app => app.doctor_id))];
+      const doctorsData: Record<string, any> = {};
+      
+      // Fetch details for each doctor
+      for (const id of doctorIds) {
+        try {
+          const doctor = await apiClient.getDoctor(id);
+          if (doctor) {
+            doctorsData[id] = doctor;
+          }
+        } catch (error) {
+          console.error(`Error fetching doctor ${id}:`, error);
+        }
+      }
+      
+      setDoctorsMap(doctorsData);
+    };
+    
+    fetchDoctorDetails();
+  }, [appointments]);
 
   // Listen for real-time changes to appointments
   useEffect(() => {
@@ -177,8 +205,17 @@ const Profile = () => {
                                   <User className="h-6 w-6 text-mediwrap-blue" />
                                 </div>
                                 <div className="ml-4">
-                                  <p className="font-semibold">Doctor #{appointment.doctor_id}</p>
-                                  <p className="text-sm text-gray-500">Medical Specialist</p>
+                                  {doctorsMap[appointment.doctor_id] ? (
+                                    <>
+                                      <p className="font-semibold">Dr. {doctorsMap[appointment.doctor_id].name}</p>
+                                      <p className="text-sm text-mediwrap-blue">{doctorsMap[appointment.doctor_id].specialty}</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="font-semibold">Doctor #{appointment.doctor_id}</p>
+                                      <p className="text-sm text-gray-500">Loading details...</p>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                               
