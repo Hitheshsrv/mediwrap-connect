@@ -162,7 +162,9 @@ const Consultation = () => {
                           >
                             <span className="text-xs font-medium text-mediwrap-blue/70 mb-1">Dr.</span>
                             <span className="text-2xl font-bold text-mediwrap-blue">
-                              {doctor.name.split(' ').map(name => name[0]).join('')}
+                             {doctor.name.split(' ').map(name => 
+                                name.charAt(0).toUpperCase()
+                              ).join('')} 
                             </span>
                           </div>
                           {doctor.available && (
