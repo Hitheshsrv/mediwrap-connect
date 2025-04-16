@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -27,6 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DoctorService } from "@/services/api/doctor-service";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the form schema with Zod
 const formSchema = z.object({
@@ -94,52 +94,70 @@ const DoctorRegistration = () => {
     setIsSubmitting(true);
     
     try {
-      console.log("Form submitted:", values);
+      // 1. Create user account first with email confirmation
+      const { data: userData, error: userError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            role: 'doctor',
+            name: `${values.firstName} ${values.lastName}`,
+          },
+          emailRedirectTo: `${window.location.origin}/login`
+        }
+      });
+
+      if (userError) throw new Error(userError.message);
+
+      if (!userData.user) throw new Error('Failed to create user account');
       
-      // Create a new instance of DoctorService
-      const doctorService = new DoctorService();
-      
-      // Map form values to doctor schema
-      const doctorData = {
-        name: `${values.firstName} ${values.lastName}`,
-        specialty: values.specialty,
-        hospital: "", // Can be updated later
-        location: `${values.city}, ${values.state}, ${values.country}`,
-        education: values.qualification,
-        experience: values.experience,
-        fee: 0, // Default value, can be updated later
-        available: true,
-        online: values.consultationType === "online" || values.consultationType === "both",
-        image: "", // Can be updated later
-        next_available: new Date().toISOString().split('T')[0], // Today's date as default
-        user_id: null, // Will be linked to user account later
-        rating: 4.5, // Default rating
-        reviews: 0, // Default number of reviews
-      };
-      
-      // Save doctor to database
-      const result = await doctorService.addDoctor(doctorData);
-      
-      if (result) {
-        // Show success message
+      // Check if email confirmation was sent
+      if (userData.user && !userData.user.confirmed_at) {
+        // 2. Create doctor profile
+        const doctorService = new DoctorService();
+        const doctorData = {
+          name: `${values.firstName} ${values.lastName}`,
+          specialty: values.specialty,
+          hospital: "", // Can be updated later
+          location: `${values.city}, ${values.state}, ${values.country}`,
+          education: values.qualification,
+          experience: values.experience,
+          fee: 0, // Default value, can be updated later
+          available: true,
+          online: values.consultationType === "online" || values.consultationType === "both",
+          image: "", // Can be updated later
+          next_available: new Date().toISOString().split('T')[0],
+          user_id: userData.user.id,
+          rating: 4.5,
+          reviews: 0,
+        };
+        
+        const result = await doctorService.addDoctor(doctorData);
+        
+        if (!result) throw new Error("Failed to create doctor profile");
+
+        // Show success message with email confirmation instructions
         toast({
           title: "Registration successful",
-          description: "Your application has been submitted for review. We will contact you soon.",
+          description: "Please check your email for a confirmation link. You need to verify your email before logging in.",
+          duration: 6000,
         });
         
-        // Redirect to home page
+        // Redirect to login page
         setTimeout(() => {
-          navigate("/");
-        }, 2000);
+          navigate("/login");
+        }, 3000);
       } else {
-        throw new Error("Failed to save doctor data");
+        throw new Error("Email confirmation could not be sent");
       }
+      
     } catch (error) {
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "There was a problem with your registration. Please try again.",
+        description: error instanceof Error ? error.message : "There was a problem with your registration. Please try again.",
         variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);
@@ -497,25 +515,48 @@ const DoctorRegistration = () => {
                     </div>
 
                     <div className="mt-6 space-y-4">
-                      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-md">
-                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-400">Important Information</h3>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                          By submitting this form, you agree to our terms and conditions. Your application will be reviewed by our team, and you may be contacted for verification of your credentials.
-                        </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        By submitting this form, you agree to our terms and conditions and privacy policy.
+                      </p>
+                      
+                      <div className="flex justify-between">
+                        <Button type="button" variant="outline" onClick={() => changeTab("professional")}>
+                          Back: Professional Details
+                        </Button>
+                        <Button 
+                          type="submit"
+                          className="bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <span className="mr-2">Submitting...</span>
+                              <svg
+                                className="animate-spin h-4 w-4"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                            </>
+                          ) : (
+                            "Submit Application"
+                          )}
+                        </Button>
                       </div>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <Button type="button" variant="outline" onClick={() => changeTab("professional")}>
-                        Back: Professional Details
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        className="bg-mediwrap-blue hover:bg-mediwrap-blue-light"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? "Submitting..." : "Submit Application"}
-                      </Button>
                     </div>
                   </TabsContent>
                 </form>

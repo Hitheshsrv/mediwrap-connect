@@ -39,6 +39,7 @@ export interface Product {
   rating?: number;
   reviews?: number;
   prescription?: boolean;
+  buyUrl?: string;  // URL where the product can be purchased
 }
 
 export interface CartItem {
