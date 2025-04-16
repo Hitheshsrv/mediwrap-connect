@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Heart, User, ShoppingCart, Moon, Sun, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { totalItems } = useCart(); // Use the cart hook to get the total items
+  const { totalItems } = useCart();
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -25,6 +27,30 @@ const Navbar = () => {
     setIsOpen(!isOpen);
   };
 
+  // Navigation items based on user role
+  const navigationItems = [
+    {
+      to: "/consultation",
+      label: "Consultation",
+      show: true, // Always show
+    },
+    {
+      to: "/pharmacy",
+      label: "Pharmacy",
+      show: true, // Always show
+    },
+    {
+      to: "/blood-donation",
+      label: "Blood Donation",
+      show: true, // Always show
+    },
+    {
+      to: "/community",
+      label: "Community",
+      show: true, // Always show
+    },
+  ];
+
   return (
     <nav className="sticky top-0 z-40 w-full bg-white dark:bg-card shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,57 +64,21 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link 
-              to="/consultation" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                location.pathname === '/consultation'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
-              }`}
-            >
-              Consultation
-            </Link>
-            <Link 
-              to="/pharmacy" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                location.pathname === '/pharmacy'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
-              }`}
-            >
-              Pharmacy
-            </Link>
-            <Link 
-              to="/blood-donation" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                location.pathname === '/blood-donation'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
-              }`}
-            >
-              Blood Donation
-            </Link>
-            <Link 
-              to="/community" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                location.pathname === '/community'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
-              }`}
-            >
-              Community
-            </Link>
-            <Link 
-              to="/doctor-registration" 
-              className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 ${
-                location.pathname === '/doctor-registration'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
-              }`}
-            >
-              <Stethoscope className="h-4 w-4" />
-              <span>For Doctors</span>
-            </Link>
+            {navigationItems.map((item) =>
+              item.show && (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === item.to
+                      ? 'text-mediwrap-blue dark:text-mediwrap-blue-light'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-mediwrap-blue dark:hover:text-mediwrap-blue-light'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
@@ -105,16 +95,24 @@ const Navbar = () => {
                 )}
               </Button>
             </Link>
-            <Link to="/profile">
-              <Button variant="ghost" size="icon" className="text-gray-700 dark:text-gray-300">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="default" className="bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white">
-                Login
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to={user?.role === 'doctor' ? '/doctor' : '/profile'}>
+                <Button variant="ghost" size="icon" className="text-gray-700 dark:text-gray-300">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="default" className="bg-mediwrap-blue hover:bg-mediwrap-blue-light text-white">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/doctor-registration" className="text-sm text-gray-600 hover:text-mediwrap-blue">
+                  For Doctors
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -143,107 +141,52 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-white dark:bg-card shadow-lg animate-fade-in">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              to="/consultation"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/consultation'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              Consultation
-            </Link>
-            <Link
-              to="/pharmacy"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/pharmacy'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              Pharmacy
-            </Link>
-            <Link
-              to="/blood-donation"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/blood-donation'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              Blood Donation
-            </Link>
-            <Link
-              to="/community"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/community'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              Community
-            </Link>
-            <Link
-              to="/doctor-registration"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/doctor-registration'
-                  ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="flex items-center gap-2">
-                <Stethoscope className="h-4 w-4" />
-                <span>For Doctors</span>
-              </div>
-            </Link>
-          </div>
-          <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center px-5">
-              <div className="flex-shrink-0">
-                <User className="h-10 w-10 rounded-full p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300" />
-              </div>
-              <div className="ml-3">
-                <div className="text-base font-medium text-gray-800 dark:text-gray-200">Guest User</div>
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">guest@example.com</div>
-              </div>
-              <div className="ml-auto flex items-center space-x-4">
-                <Link to="/cart">
-                  <Button variant="ghost" size="icon" className="relative text-gray-700 dark:text-gray-300">
-                    <ShoppingCart className="h-5 w-5" />
-                    {totalItems > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-mediwrap-red rounded-full">
-                        {totalItems}
-                      </span>
-                    )}
-                  </Button>
+            {navigationItems.map((item) =>
+              item.show && (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    location.pathname === item.to
+                      ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.label}
                 </Link>
-              </div>
-            </div>
-            <div className="mt-3 px-2 flex flex-col space-y-2">
+              )
+            )}
+            {!isAuthenticated && (
               <Link
-                to="/profile"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  location.pathname === '/profile'
-                    ? 'text-mediwrap-blue dark:text-mediwrap-blue-light bg-gray-50 dark:bg-gray-800'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`}
+                to="/doctor-registration"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => setIsOpen(false)}
               >
-                My Profile
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4" />
+                  <span>For Doctors</span>
+                </div>
               </Link>
+            )}
+            {!isAuthenticated && (
               <Link
                 to="/login"
-                className="block w-full text-center px-4 py-2 text-base font-medium text-white bg-mediwrap-blue hover:bg-mediwrap-blue-light rounded-md"
+                className="block px-3 py-2 rounded-md text-base font-medium text-mediwrap-blue dark:text-mediwrap-blue-light"
                 onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
-            </div>
+            )}
+            {isAuthenticated && (
+              <Link
+                to={user?.role === 'doctor' ? '/doctor' : '/profile'}
+                className="block px-3 py-2 rounded-md text-base font-medium text-mediwrap-blue dark:text-mediwrap-blue-light"
+                onClick={() => setIsOpen(false)}
+              >
+                My Profile
+              </Link>
+            )}
           </div>
         </div>
       )}

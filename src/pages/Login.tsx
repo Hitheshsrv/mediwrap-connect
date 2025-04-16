@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -21,7 +20,7 @@ import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, signup, isLoading, isAuthenticated, error } = useAuth();
+  const { login, signup, isLoading, isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("login");
 
@@ -43,12 +42,18 @@ const Login = () => {
     setRegisterError(null);
   }, [activeTab]);
 
-  // If user is already logged in, redirect to home
+  // If user is already logged in, redirect based on role
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/");
+    if (isAuthenticated && user) {
+      if (user.role === 'doctor') {
+        navigate("/doctor");
+      } else if (user.role === 'admin') {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +66,7 @@ const Login = () => {
     
     try {
       await login(loginEmail, loginPassword);
-      // The navigation to home page will happen in the useEffect when isAuthenticated changes
+      // The navigation will happen in the useEffect when isAuthenticated changes
     } catch (err) {
       console.error("Login error:", err);
       if (err instanceof Error) {
@@ -186,7 +191,7 @@ const Login = () => {
                       />
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col space-y-4">
                     <Button 
                       type="submit" 
                       className="w-full bg-mediwrap-blue hover:bg-mediwrap-blue-light"
@@ -194,6 +199,15 @@ const Login = () => {
                     >
                       {isLoading ? "Logging in..." : "Sign In"}
                     </Button>
+                    <div className="text-sm text-center">
+                      Are you a doctor?{" "}
+                      <a
+                        href="/doctor-registration"
+                        className="text-mediwrap-blue hover:underline"
+                      >
+                        Register here
+                      </a>
+                    </div>
                   </CardFooter>
                 </form>
                 <div className="px-6 pb-6 text-center">

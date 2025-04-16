@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 
@@ -18,8 +17,24 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import DoctorRegistration from "./pages/DoctorRegistration";
-import NotFound from "./pages/NotFound";
 import DoctorPanel from "./pages/DoctorPanel";
+import NotFound from "./pages/NotFound";
+import { useAuth } from "@/hooks/useAuth";
+
+// Protected Route for Doctor
+const DoctorRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (user?.role !== 'doctor') {
+    return <Navigate to="/" />;
+  }
+  
+  return <>{children}</>;
+};
 
 const queryClient = new QueryClient();
 
@@ -32,6 +47,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
+              {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/consultation" element={<Consultation />} />
               <Route path="/pharmacy" element={<Pharmacy />} />
@@ -40,10 +56,22 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/doctor-panel" element={<DoctorPanel />} />
               <Route path="/doctor-registration" element={<DoctorRegistration />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+              {/* Protected Doctor Routes */}
+              <Route path="/doctor/*" element={
+                <DoctorRoute>
+                  <Routes>
+                    <Route path="/" element={<DoctorPanel />} />
+                    <Route path="*" element={<Navigate to="/doctor" />} />
+                  </Routes>
+                </DoctorRoute>
+              } />
+
+              {/* Protected Admin Routes */}
+              <Route path="/admin" element={<Admin />} />
+
+              {/* Catch-all Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
